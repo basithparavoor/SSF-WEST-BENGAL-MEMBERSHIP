@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
-  <!-- jsPDF libraries for Secure PDF exports -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
@@ -76,8 +75,7 @@
         <button onclick="openMembershipFormModal()" class="h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider box-border"><i class="fa-solid fa-user-plus"></i> Enroll Member</button>
       </div>
 
-      <div class="bg-white p-4.5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+<div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
             <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-1"></i> Global Filters</h3>
             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button onclick="exportSelectedToPDF()" class="flex-1 sm:flex-none h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-file-pdf text-rose-600"></i> Export PDF List</button>
@@ -150,40 +148,33 @@
       <a href="settings.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400"><i class="fa-solid fa-gears text-sm"></i><span class="text-[8px] font-bold mt-1">Setup</span></a>
   </nav>
 
-  <!-- ========================================== -->
-  <!-- VIEW MEMBERSHIP MODAL (Verification Hub)   -->
-  <!-- ========================================== -->
   <div id="viewMembershipModal" class="backdrop-blur-layer bg-slate-950/60 hidden fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
-      <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-200">
+      
+      <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-200">
           
           <div class="flex justify-between items-center p-4 sm:p-6 border-b border-slate-100 bg-slate-50/50">
               <h3 class="text-lg font-black text-slate-900 uppercase font-mono tracking-tight"><i class="fa-solid fa-id-badge text-indigo-500 mr-2"></i> ID & Verification Gateway</h3>
               <button onclick="closeViewMembershipModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"><i class="fa-solid fa-xmark"></i></button>
           </div>
 
-          <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-50">
-              <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+          <div class="p-4 sm:p-6 flex-1 bg-slate-50 overflow-hidden flex flex-col">
+              
+              <div class="grid grid-cols-1 xl:grid-cols-[auto_1fr] gap-6 items-start h-full overflow-y-auto custom-scrollbar pr-2">
                   
-                  <!-- Left Column: The Digital ID Card Preview -->
-                  <div class="flex flex-col items-center gap-4 w-full">
+                  <div class="flex flex-col gap-4 w-full xl:w-max">
                       
-                      <!-- Scrollable wrapper fix prevents html2canvas cropping on mobile -->
-                      <div class="w-full overflow-x-auto custom-scrollbar pb-4" style="text-align: left;">
-                          <div class="w-max mx-auto p-1">
+                      <div class="w-full flex justify-center">
+                          <div class="w-max shadow-lg rounded-xl">
                               
-                              <!-- ACTUAL ID CARD (Redesigned for better spacing) -->
-                              <div id="digitalCardPrintArea" class="w-[680px] h-[440px] bg-white relative overflow-hidden border border-slate-200 shadow-md rounded-xl flex flex-col" style="background-color: #f8fafc; background-image: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 20px 20px;">
+                              <div id="digitalCardPrintArea" class="w-[680px] h-[440px] bg-white relative overflow-hidden border border-slate-200 rounded-xl flex flex-col" style="background-color: #f8fafc; background-image: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 20px 20px;">
                                   
-                                  <!-- Top Header -->
                                   <div class="flex justify-between items-start pt-6 pl-8">
                                       <h1 class="text-[#b91c1c] text-[65px] leading-none tracking-wider font-cooper" style="text-shadow: 2px 2px 0px rgba(0,0,0,0.05);">SSF</h1>
                                       <div id="cardPrintRoleBox" class="bg-[#b91c1c] text-white font-bold text-xl px-6 py-2.5 rounded-l-2xl shadow-md uppercase tracking-widest mt-2 whitespace-nowrap"></div>
                                   </div>
 
-                                  <!-- Middle Section: Details + Photo/QR -->
                                   <div class="px-8 mt-4 flex justify-between gap-6 relative z-10 flex-1">
                                       
-                                      <!-- Details Box -->
                                       <div class="bg-gradient-to-r from-[#ebd699] to-[#d6bc6d] rounded-2xl p-5 flex-1 shadow-sm text-[15px] font-bold text-slate-900 z-10 relative h-fit">
                                           <table class="w-full">
                                               <tr><td class="w-24 pb-2 opacity-80">No</td><td class="pb-2">: <span id="cardPrintId"></span></td></tr>
@@ -196,7 +187,6 @@
                                           </table>
                                       </div>
 
-                                      <!-- Right Side: Photo & QR -->
                                       <div class="flex flex-col items-center gap-3 relative z-10 mr-4">
                                           <div class="w-[110px] h-[135px] shrink-0 bg-white rounded-[1rem] shadow-md overflow-hidden border-[4px] border-white z-10 relative">
                                               <img id="cardPrintPhoto" src="" crossorigin="anonymous" class="w-full h-full object-cover">
@@ -206,7 +196,6 @@
                                           </div>
                                       </div>
                                       
-                                      <!-- Vertical Validity Text -->
                                       <div class="absolute right-0 top-0 bottom-0 flex items-center justify-center w-6">
                                           <div class="text-[11px] font-bold tracking-widest text-slate-800 transform -rotate-90 whitespace-nowrap">
                                               Valid Upto : 2028 December 31
@@ -214,10 +203,8 @@
                                       </div>
                                   </div>
 
-                                  <!-- Bottom Footer Section -->
                                   <div class="w-full px-8 pb-3 relative z-20 mt-auto">
                                       <div class="flex justify-between items-end mb-2">
-                                          <!-- Seal & Signature -->
                                           <div class="flex items-center gap-4">
                                               <div class="w-16 h-16 flex items-center justify-center overflow-hidden">
                                                   <img src="https://corsproxy.io/?https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Dview%26id%3D1HPuNAPX_dq_HY5jAsZaIq9tpSc5tR0sf" crossorigin="anonymous" class="w-full h-full object-contain mix-blend-multiply opacity-90" onerror="this.style.display='none'">
@@ -238,7 +225,6 @@
                                               <span class="flex items-center gap-1"><i class="fa-solid fa-envelope"></i> ssf.wbstate@gmail.com</span>
                                               <span class="flex items-center gap-1"><i class="fa-solid fa-phone"></i> +91 7025 292 136</span>
                                           </div>
-                                          <!-- Downloaded Date -->
                                           <div class="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Generated On: <span id="cardPrintDate" class="text-slate-600 font-black"></span></div>
                                       </div>
                                   </div>
@@ -246,17 +232,15 @@
                           </div>
                       </div>
 
-                      <div class="flex flex-col w-full max-w-[320px]">
+                      <div class="flex flex-col w-full px-2 lg:px-0 lg:max-w-[680px] mx-auto mt-2">
                           <button onclick="downloadDigitalCardAsPDF(event)" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all uppercase tracking-wider flex items-center justify-center gap-2 text-xs">
                               <i class="fa-solid fa-lock text-sm"></i> Download Secure PDF
                           </button>
                       </div>
                   </div>
 
-                  <!-- Right Column: Verification Hub & Database View -->
-                  <div class="flex flex-col gap-4 w-full">
+                  <div class="flex flex-col gap-4 w-full min-w-[300px]">
                       
-                      <!-- Verification Hub -->
                       <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden">
                           <div class="absolute -right-4 -top-4 w-20 h-20 bg-indigo-50 rounded-full opacity-50 pointer-events-none"></div>
                           <h4 class="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3 font-mono relative z-10"><i class="fa-solid fa-link"></i> Verification Hub</h4>
@@ -280,7 +264,6 @@
                           </div>
                       </div>
 
-                      <!-- Database Snapshot -->
                       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                           <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 font-mono"><i class="fa-solid fa-database text-slate-400"></i> Database Snapshot</h4>
                           <div class="space-y-2.5 text-[11px]">
@@ -301,9 +284,6 @@
       </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- ADD/EDIT MEMBERSHIP MODAL                  -->
-  <!-- ========================================== -->
   <div id="addMembershipModal" class="backdrop-blur-layer bg-slate-950/60 hidden fixed inset-0 z-40 flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
       <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-200">
           
@@ -437,7 +417,6 @@
       </div>
   </div>
 
-  <!-- FRONTEND DELETE CONFIRMATION MODAL -->
   <div id="deleteConfirmModal" class="backdrop-blur-layer bg-slate-950/60 hidden fixed inset-0 z-[70] flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
       <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 flex flex-col text-center transform scale-95 transition-transform duration-200">
           <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">

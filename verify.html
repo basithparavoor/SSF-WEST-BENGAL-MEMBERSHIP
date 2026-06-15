@@ -10,26 +10,23 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- jsPDF libraries for Secure PDF exports -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4 antialiased relative overflow-hidden">
+<body class="bg-slate-50 min-h-screen flex flex-col items-center py-8 px-4 antialiased relative overflow-x-hidden">
     
     <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-pulse"></div>
     <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-pulse" style="animation-delay: 2s;"></div>
 
-    <div class="w-full max-w-sm relative z-10">
+    <div class="w-full max-w-[720px] relative z-10 my-auto">
         
-        <!-- Loading State -->
         <div id="loadingState" class="bg-white/95 backdrop-blur-xl p-10 rounded-[2rem] shadow-2xl border border-white/60 text-center flex flex-col items-center justify-center h-64 animate-fade-in-up">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent mb-4 shadow-lg"></div>
             <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest font-mono">Verifying Node...</h2>
             <p class="text-xs text-slate-500 mt-2">Checking secure registry</p>
         </div>
 
-        <!-- Valid State -->
         <div id="validState" class="hidden animate-fade-in-up">
             <div class="bg-emerald-500 text-white text-center py-4 rounded-t-[2rem] shadow-lg relative z-20 flex flex-col items-center">
                 <div class="w-12 h-12 bg-white text-emerald-500 rounded-full flex items-center justify-center text-xl shadow-inner mb-2"><i class="fa-solid fa-shield-check"></i></div>
@@ -37,11 +34,9 @@
             </div>
             
             <div id="verifyTargetNode" class="w-full shadow-2xl rounded-b-[2rem] overflow-hidden border-x border-b border-white/60 -mt-4 pt-4 bg-white relative">
-                <!-- Data injected here via JS -->
-            </div>
+                </div>
         </div>
 
-        <!-- Invalid State -->
         <div id="invalidState" class="hidden bg-white/95 backdrop-blur-xl p-10 rounded-[2rem] shadow-2xl border border-white/60 text-center animate-fade-in-up">
             <div class="w-20 h-20 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-inner"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <h2 class="text-xl font-black text-slate-900 uppercase tracking-tight">Identity Not Found</h2>

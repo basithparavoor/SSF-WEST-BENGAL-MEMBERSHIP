@@ -1,7 +1,13 @@
 let allPayments = [];
 let filteredPayments = [];
-let chartInstance = null;
-let GLOBAL_UPI_ID = ""; // Added dynamic variable
+
+let GLOBAL_UPI_ID = ""; 
+let FEE_STRUCTURE = { state: 0, district: 0, block: 0, panchayat: 0, unit: 0, member: 0 };
+
+// Auto-Resolved Node Variables
+let NODE_PATH = "STATE_GLOBAL";
+let NODE_TYPE = "GLOBAL"; 
+let NODE_VALUE = "";
 
 let currentPage = 1;
 let pageSize = 25;
@@ -9,32 +15,82 @@ let pageSize = 25;
 document.addEventListener('DOMContentLoaded', async () => {
     if (!enforceSession()) return;
     setActiveSidebarLink('payments');
+    resolveUserNode();
     await fetchFinanceData();
 });
 
+// UI Helper: Animated Number Counter
+function animateValue(obj, start, end, duration, prefix = "₹") {
+    if (!obj) return;
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 4);
+        const current = Math.floor(easeProgress * (end - start) + start);
+        obj.innerText = prefix + current.toLocaleString('en-IN');
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        } else {
+            obj.innerText = prefix + end.toLocaleString('en-IN');
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+// SAFE User Node Resolver (Prevents crashes if assignedFields is null/empty)
+function resolveUserNode() {
+    if (STATE_CACHE.role !== 'Admin' && STATE_CACHE.role !== 'MasterAdmin') {
+        try {
+            if (!STATE_CACHE.assignedFields) return;
+            
+            let obj = typeof STATE_CACHE.assignedFields === 'string' 
+                ? JSON.parse(STATE_CACHE.assignedFields) 
+                : STATE_CACHE.assignedFields;
+                
+            if (!obj) return;
+
+            if (obj.units && obj.units.length > 0) { NODE_TYPE = "unit"; NODE_VALUE = obj.units[0]; NODE_PATH = `Unit: ${NODE_VALUE}`; }
+            else if (obj.panchayats && obj.panchayats.length > 0) { NODE_TYPE = "panchayat"; NODE_VALUE = obj.panchayats[0]; NODE_PATH = `Panchayat: ${NODE_VALUE}`; }
+            else if (obj.blocks && obj.blocks.length > 0) { NODE_TYPE = "block"; NODE_VALUE = obj.blocks[0]; NODE_PATH = `Block: ${NODE_VALUE}`; }
+            else if (obj.districts && obj.districts.length > 0) { NODE_TYPE = "district"; NODE_VALUE = obj.districts[0]; NODE_PATH = `District: ${NODE_VALUE}`; }
+        } catch(e) {
+            console.error("Node assignment error safely caught:", e);
+        }
+    }
+}
+
 // ==========================================
-// DATA CORE FETCH & METRICS
+// DATA CORE FETCH & DYNAMIC CALCULATION
 // ==========================================
 async function fetchFinanceData() {
-    toggleInteractionLoader(true, "Fetching Financial Ledgers...");
+    toggleInteractionLoader(true, "Calculating Node Financials...");
     try {
-        // Fetch Payments and Global Settings concurrently
-        const [payRes, setRes] = await Promise.all([
+        const [payRes, setRes, feeRes, memRes] = await Promise.all([
             supa.from('payments').select('*').order('id', { ascending: false }),
-            supa.from('settings').select('*').eq('key', 'UpiId').maybeSingle()
+            supa.from('settings').select('*').eq('key', 'MasterUPI').maybeSingle(),
+            supa.from('fee_structure').select('*'),
+            supa.from('memberships').select('district, block, panchayat, unit, committee_role')
         ]);
         
         allPayments = payRes.data || [];
         filteredPayments = [...allPayments];
 
-        // Store Dynamic UPI ID (fallback to hardcoded if not set yet)
         if(setRes.data && setRes.data.value) {
             GLOBAL_UPI_ID = setRes.data.value;
         } else {
             GLOBAL_UPI_ID = "statecommittee@sbi";
         }
-        
-        updateMetricsAndChart();
+
+        if(feeRes.data) {
+            feeRes.data.forEach(f => {
+                if(FEE_STRUCTURE.hasOwnProperty(f.role_type)) {
+                    FEE_STRUCTURE[f.role_type] = parseFloat(f.amount) || 0;
+                }
+            });
+        }
+
+        calculateNodeFinancials(memRes.data || []);
         applyFilters();
 
     } catch(err) {
@@ -43,43 +99,52 @@ async function fetchFinanceData() {
     toggleInteractionLoader(false);
 }
 
-function updateMetricsAndChart() {
-    let verified = 0, pending = 0, rejected = 0;
+function calculateNodeFinancials(allSystemMembers) {
+    let expectedTotal = 0;
+    let paidTotal = 0;
+    
+    let nodeMembers = allSystemMembers;
+    if (NODE_TYPE !== "GLOBAL") {
+        nodeMembers = allSystemMembers.filter(m => m[NODE_TYPE] === NODE_VALUE);
+    }
+
+    nodeMembers.forEach(m => {
+        let roleStr = m.committee_role || 'Unit Member';
+        let level = roleStr.split(' ')[0].toLowerCase(); 
+        if (roleStr.toLowerCase().includes('member')) level = 'member';
+
+        // Safe parsing to prevent NaN breaks
+        let feeAmount = FEE_STRUCTURE[level];
+        if (feeAmount === undefined || isNaN(feeAmount)) {
+            feeAmount = FEE_STRUCTURE['member'] || 0;
+        }
+        
+        expectedTotal += parseFloat(feeAmount);
+    });
 
     allPayments.forEach(p => {
-        let amt = parseFloat(p.amount || 0);
-        if(p.status === 'VERIFIED') verified += amt;
-        else if(p.status === 'PENDING') pending += amt;
-        else if(p.status === 'REJECTED') rejected += amt;
-    });
-
-    document.getElementById('statVerified').innerText = "₹" + verified.toLocaleString('en-IN');
-    document.getElementById('statPending').innerText = "₹" + pending.toLocaleString('en-IN');
-    document.getElementById('statRejected').innerText = "₹" + rejected.toLocaleString('en-IN');
-
-    // Chart Update
-    const ctx = document.getElementById('financeChart');
-    if (chartInstance) chartInstance.destroy();
-
-    // Prevent empty chart bug
-    if(verified === 0 && pending === 0 && rejected === 0) return;
-
-    chartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Verified', 'Pending', 'Rejected'],
-            datasets: [{
-                data: [verified, pending, rejected],
-                backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
-                borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '70%',
-            plugins: { legend: { display: false }, tooltip: { enabled: true } },
-            animation: { animateScale: true, duration: 800 }
+        if (NODE_TYPE === "GLOBAL" || p.node_path === NODE_PATH) {
+            if (p.status === 'VERIFIED') paidTotal += parseFloat(p.amount || 0);
         }
     });
+
+    const pendingTotal = Math.max(0, expectedTotal - paidTotal);
+
+    // Run safe animations
+    animateValue(document.getElementById('bannerTotal'), 0, expectedTotal, 1500);
+    animateValue(document.getElementById('bannerPaid'), 0, paidTotal, 1500);
+    animateValue(document.getElementById('bannerPending'), 0, pendingTotal, 1500);
+    
+    document.getElementById('bannerFieldName').innerText = NODE_PATH;
+
+    const btnPay = document.getElementById('btnPayNow');
+    if (pendingTotal === 0) {
+        btnPay.classList.add('opacity-50', 'cursor-not-allowed');
+        btnPay.onclick = () => spawnToastNotification("All dues are cleared for this field.", "success");
+    } else {
+        btnPay.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnPay.onclick = () => triggerUPIPayment(pendingTotal);
+    }
 }
 
 // ==========================================
@@ -91,6 +156,7 @@ function applyFilters() {
 
     filteredPayments = allPayments.filter(p => {
         let match = true;
+        if (NODE_TYPE !== "GLOBAL" && p.node_path !== NODE_PATH) match = false;
         if (status && p.status !== status) match = false;
         if (q) {
             const searchStr = `${p.tx_id} ${p.node_path} ${p.recorded_by}`.toLowerCase();
@@ -138,13 +204,13 @@ function renderPagination() {
     if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
 
     for (let i = startPage; i <= endPage; i++) {
-        const activeClass = i === currentPage ? 'bg-emerald-600 text-white shadow-md border-emerald-600' : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200';
-        numContainer.innerHTML += `<button onclick="goToPage(${i})" class="w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold transition-all ${activeClass}">${i}</button>`;
+        const activeClass = i === currentPage ? 'bg-indigo-600 text-white shadow-[0_4px_10px_rgba(79,70,229,0.3)] border-indigo-600' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200';
+        numContainer.innerHTML += `<button onclick="goToPage(${i})" class="w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold transition-all duration-300 ${activeClass} hover:-translate-y-0.5">${i}</button>`;
     }
 }
 
 // ==========================================
-// RENDER TABLE & CARDS
+// RENDER TABLE & CARDS WITH STAGGERED ANIMATION
 // ==========================================
 function renderTable() {
     const tbody = document.getElementById('paymentTableBody');
@@ -162,63 +228,62 @@ function renderTable() {
     const startIdx = (currentPage - 1) * pageSize;
     const currentSlice = filteredPayments.slice(startIdx, startIdx + pageSize);
 
-    // SECURITY CHECK: Only Admins can verify payments
     const isAdmin = STATE_CACHE.role === 'Admin' || STATE_CACHE.role === 'MasterAdmin';
 
     currentSlice.forEach((p, index) => {
         let statusBadge = '';
-        if(p.status === 'VERIFIED') statusBadge = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-[9px]"><i class="fa-solid fa-check mr-1"></i> Verified</span>`;
-        else if(p.status === 'PENDING') statusBadge = `<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-[9px]"><i class="fa-solid fa-clock mr-1"></i> Pending</span>`;
-        else if(p.status === 'REJECTED') statusBadge = `<span class="bg-rose-50 text-rose-600 border border-rose-100 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-[9px]"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;
+        if(p.status === 'VERIFIED') statusBadge = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-200/60 px-2.5 py-1 rounded-lg font-bold uppercase tracking-widest text-[9px] shadow-sm"><i class="fa-solid fa-check mr-1"></i> Verified</span>`;
+        else if(p.status === 'PENDING') statusBadge = `<span class="bg-amber-50 text-amber-600 border border-amber-200/60 px-2.5 py-1 rounded-lg font-bold uppercase tracking-widest text-[9px] shadow-sm"><i class="fa-solid fa-clock mr-1 animate-pulse"></i> Pending</span>`;
+        else if(p.status === 'REJECTED') statusBadge = `<span class="bg-rose-50 text-rose-600 border border-rose-200/60 px-2.5 py-1 rounded-lg font-bold uppercase tracking-widest text-[9px] shadow-sm"><i class="fa-solid fa-xmark mr-1"></i> Rejected</span>`;
 
-        let actionButtons = `<span class="text-[9px] font-mono text-slate-400">Locked</span>`;
+        let actionButtons = `<span class="text-[9px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">Locked</span>`;
         if (isAdmin && p.status === 'PENDING') {
             actionButtons = `
-            <div class="flex items-center justify-end gap-1">
-                <button onclick="updatePaymentStatus('${p.tx_id}', 'REJECTED')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-lg font-bold transition-colors">Reject</button>
-                <button onclick="updatePaymentStatus('${p.tx_id}', 'VERIFIED')" class="bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm border border-emerald-600 px-3 py-1.5 rounded-lg font-bold transition-colors">Verify</button>
+            <div class="flex items-center justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+                <button onclick="updatePaymentStatus('${p.tx_id}', 'REJECTED')" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-200 px-3 py-1.5 rounded-lg font-bold transition-all duration-300 active:scale-95 shadow-sm text-[10px] uppercase tracking-wider">Reject</button>
+                <button onclick="updatePaymentStatus('${p.tx_id}', 'VERIFIED')" class="bg-[#0f7652] text-white hover:bg-emerald-800 shadow-sm hover:shadow-emerald-900/30 px-4 py-1.5 rounded-lg font-bold transition-all duration-300 active:scale-95 text-[10px] uppercase tracking-wider">Verify</button>
             </div>`;
         } else if (isAdmin) {
-            actionButtons = `<button onclick="deletePaymentRecord('${p.tx_id}')" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 shadow-sm transition-all flex items-center justify-center ml-auto" title="Delete Ledger"><i class="fa-solid fa-trash-can text-[10px]"></i></button>`;
+            actionButtons = `<button onclick="deletePaymentRecord('${p.tx_id}')" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-white hover:bg-rose-500 shadow-sm transition-all duration-300 flex items-center justify-center ml-auto active:scale-95" title="Delete Ledger"><i class="fa-solid fa-trash-can text-[10px]"></i></button>`;
         }
 
         const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
 
         // Desktop Row
         tbody.innerHTML += `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="py-3 px-4 text-center font-mono text-slate-400">${startIdx + index + 1}</td>
-                <td class="py-3 px-4">
-                    <div class="font-black text-slate-900 text-sm">₹${parseFloat(p.amount).toLocaleString('en-IN')}</div>
-                    <div class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded inline-block mt-1">${p.tx_id}</div>
+            <tr class="group hover:bg-indigo-50/30 transition-colors duration-300 border-b border-slate-50 last:border-0">
+                <td class="py-3.5 px-5 text-center font-mono text-slate-400 font-bold">${startIdx + index + 1}</td>
+                <td class="py-3.5 px-5">
+                    <div class="font-black text-slate-800 text-[13px] group-hover:text-indigo-600 transition-colors">₹${parseFloat(p.amount).toLocaleString('en-IN')}</div>
+                    <div class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-2 py-0.5 rounded-md inline-block mt-1 tracking-widest">${p.tx_id}</div>
                 </td>
-                <td class="py-3 px-4">
-                    <div class="font-bold text-slate-700 text-[11px]"><i class="fa-solid fa-user-tie text-slate-400 mr-1"></i> ${p.recorded_by}</div>
-                    <div class="text-[10px] text-slate-500 font-medium mt-1"><i class="fa-solid fa-location-crosshairs text-indigo-400 mr-1"></i> Node: ${p.node_path}</div>
+                <td class="py-3.5 px-5">
+                    <div class="font-bold text-slate-700 text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-user-tie text-slate-400 text-[10px]"></i> ${p.recorded_by}</div>
+                    <div class="text-[9px] text-slate-500 font-bold mt-1.5 uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs text-indigo-400 text-[10px]"></i> Node: ${p.node_path}</div>
                 </td>
-                <td class="py-3 px-4">
+                <td class="py-3.5 px-5">
                     ${statusBadge}
-                    <div class="text-[9px] text-slate-400 font-mono mt-1">${dateStr}</div>
+                    <div class="text-[9px] text-slate-400 font-mono mt-1.5 font-bold tracking-widest">${dateStr}</div>
                 </td>
-                <td class="py-3 px-4 text-right pr-6">${actionButtons}</td>
+                <td class="py-3.5 px-5 text-right pr-7">${actionButtons}</td>
             </tr>`;
 
         // Mobile Card
         mobileGrid.innerHTML += `
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative hover:shadow-md transition-shadow duration-300">
                 <div class="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
                     <div>
-                        <h4 class="text-lg font-black text-slate-900 leading-tight">₹${parseFloat(p.amount).toLocaleString('en-IN')}</h4>
-                        <span class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded mt-1 inline-block">${p.tx_id}</span>
+                        <h4 class="text-lg font-black text-slate-900 leading-tight tracking-tight">₹${parseFloat(p.amount).toLocaleString('en-IN')}</h4>
+                        <span class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-2 py-0.5 rounded-md mt-1.5 inline-block tracking-widest">${p.tx_id}</span>
                     </div>
                     ${statusBadge}
                 </div>
-                <div class="grid grid-cols-2 gap-2 text-[10px] font-medium text-slate-600 mb-4">
-                    <div><span class="font-bold text-slate-400 block uppercase tracking-wider mb-0.5 font-mono">Operator</span>${p.recorded_by}</div>
-                    <div><span class="font-bold text-slate-400 block uppercase tracking-wider mb-0.5 font-mono">Routing Node</span>${p.node_path}</div>
+                <div class="grid grid-cols-2 gap-3 text-[10px] font-medium text-slate-600 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div><span class="font-bold text-slate-400 block uppercase tracking-widest mb-1 font-mono">Operator</span><span class="font-bold text-slate-700">${p.recorded_by}</span></div>
+                    <div><span class="font-bold text-slate-400 block uppercase tracking-widest mb-1 font-mono">Node</span><span class="font-bold text-slate-700">${p.node_path}</span></div>
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
-                    <span class="text-[9px] font-mono text-slate-400">${dateStr}</span>
+                    <span class="text-[9px] font-mono font-bold tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">${dateStr}</span>
                     <div>${actionButtons}</div>
                 </div>
             </div>`;
@@ -226,50 +291,49 @@ function renderTable() {
 }
 
 // ==========================================
-// ACTIONS & MUTATIONS
+// UPI PAYMENT MODAL & INTENT LOGGING
 // ==========================================
-function updateQR() {
-    const amt = document.getElementById('payAmountInput').value || 0;
+
+function triggerUPIPayment(amount) {
+    document.getElementById('modalAmountDue').innerText = `₹${amount.toLocaleString('en-IN')}`;
+    document.getElementById('modalUpiIdText').innerText = GLOBAL_UPI_ID;
+    document.getElementById('upiQRModal').dataset.amount = amount;
     
-    // Inject Dynamic GLOBAL_UPI_ID
-    const upiLink = `upi://pay?pa=${GLOBAL_UPI_ID}&pn=SSF_West_Bengal&am=${amt}&cu=INR`;
-    
+    const upiLink = `upi://pay?pa=${GLOBAL_UPI_ID}&pn=SSF_West_Bengal&am=${amount}&cu=INR`;
     document.getElementById('qrModalImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiLink)}`;
+    
+    const btn = document.getElementById('btnConfirmPayModal');
+    btn.querySelector('.btn-text').classList.remove('opacity-0');
+    btn.querySelector('.fa-spinner').classList.add('hidden');
+    btn.disabled = false;
+
+    const modal = document.getElementById('upiQRModal');
+    modal.classList.remove('hidden', 'opacity-0');
+    setTimeout(() => { modal.children[0].classList.remove('scale-95'); }, 10);
 }
 
-function triggerUPIPayment() {
-    updateQR();
-    const modal = document.getElementById('upiQRModal');
-    modal.classList.remove('hidden', 'pointer-events-none', 'opacity-0');
-    modal.children[0].classList.remove('scale-95');
+function openUPIApp() {
+    const amount = document.getElementById('upiQRModal').dataset.amount;
+    const upiLink = `upi://pay?pa=${GLOBAL_UPI_ID}&pn=SSF_West_Bengal&am=${amount}&cu=INR`;
+    window.location.href = upiLink; 
 }
 
 function closeUPIModal() { 
     document.getElementById('upiQRModal').children[0].classList.add('scale-95');
-    setTimeout(() => document.getElementById('upiQRModal').classList.add('hidden', 'pointer-events-none', 'opacity-0'), 200);
+    setTimeout(() => document.getElementById('upiQRModal').classList.add('hidden', 'opacity-0'), 300);
 }
 
-async function confirmPaymentIntent() {
-    const amt = document.getElementById('payAmountInput').value;
-    if(!amt || amt <= 0) return spawnToastNotification("Enter valid amount.", "error");
+async function confirmPaymentIntent(btnElement) {
+    const amt = document.getElementById('upiQRModal').dataset.amount;
+    if(!amt || amt <= 0) return spawnToastNotification("Invalid amount.", "error");
 
-    toggleInteractionLoader(true, "Logging intent...");
-    
-    // Auto-resolve user territory scope
-    let scopeStr = "Global Access";
-    if (STATE_CACHE.assignedFields) {
-        try {
-            let obj = typeof STATE_CACHE.assignedFields === 'string' ? JSON.parse(STATE_CACHE.assignedFields) : STATE_CACHE.assignedFields;
-            if(obj.units && obj.units.length > 0) scopeStr = `Unit: ${obj.units[0]}`;
-            else if(obj.panchayats && obj.panchayats.length > 0) scopeStr = `Panchayat: ${obj.panchayats[0]}`;
-            else if(obj.blocks && obj.blocks.length > 0) scopeStr = `Block: ${obj.blocks[0]}`;
-            else if(obj.districts && obj.districts.length > 0) scopeStr = `District: ${obj.districts[0]}`;
-        } catch(e) {}
-    }
+    btnElement.disabled = true;
+    btnElement.querySelector('.btn-text').classList.add('opacity-0');
+    btnElement.querySelector('.fa-spinner').classList.remove('hidden');
 
     const payload = { 
         tx_id: "TXN-" + Math.floor(10000000 + Math.random() * 90000000), 
-        node_path: scopeStr, 
+        node_path: NODE_PATH, 
         amount: amt, 
         status: 'PENDING', 
         recorded_by: STATE_CACHE.user 
@@ -277,14 +341,20 @@ async function confirmPaymentIntent() {
 
     try {
         await supa.from('payments').insert([payload]);
-        spawnToastNotification("Intent Logged. Awaiting Verification.", "success");
+        spawnToastNotification("Intent Logged. Awaiting Admin Verification.", "success");
         closeUPIModal(); 
         await fetchFinanceData(); 
     } catch(err) {
         spawnToastNotification("Failed to log payment.", "error");
+        btnElement.disabled = false;
+        btnElement.querySelector('.btn-text').classList.remove('opacity-0');
+        btnElement.querySelector('.fa-spinner').classList.add('hidden');
     }
-    toggleInteractionLoader(false);
 }
+
+// ==========================================
+// ADMIN MUTATIONS
+// ==========================================
 
 async function updatePaymentStatus(txId, status) {
     if(!confirm(`Mark transaction as ${status}?`)) return;

@@ -120,6 +120,16 @@ function renderVerifiedCard(m) {
     </div>
     
     <div class="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-3 rounded-b-[2rem]">
+        
+        <div class="bg-indigo-50 border border-indigo-100/50 text-indigo-800 p-3 rounded-xl text-xs flex gap-3 shadow-sm">
+            <i class="fa-solid fa-lock text-indigo-500 mt-0.5 text-sm"></i>
+            <div class="leading-relaxed">
+                <strong class="block mb-0.5 text-[10px] uppercase tracking-widest font-black text-indigo-900">Encrypted PDF Password</strong>
+                The downloaded file is password protected. Format: <b>Birth Year</b> + <b>Last 4 digits of Mobile</b> <br>
+                <span class="text-indigo-600/80 font-mono mt-1 inline-block">(e.g., if born 1995 and mobile ends in 7890 &rarr; <b>19957890</b>)</span>
+            </div>
+        </div>
+
         <button onclick="downloadDigitalCardAsPDF(event)" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
             <i class="fa-solid fa-lock"></i> Download Secure PDF
         </button>

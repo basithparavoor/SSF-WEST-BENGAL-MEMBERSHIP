@@ -10,20 +10,18 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- jsPDF libraries for Secure PDF exports -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4 antialiased relative overflow-hidden">
+<body class="bg-slate-50 min-h-screen flex flex-col items-center py-8 px-4 antialiased relative overflow-x-hidden">
     
-    <!-- Ambient Background Glows -->
     <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-pulse"></div>
     <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-[128px] opacity-40 animate-pulse" style="animation-delay: 2s;"></div>
 
-    <div class="w-full max-w-sm relative z-10 animate-fade-in-up">
+    <div class="w-full max-w-[720px] relative z-10 my-auto animate-fade-in-up">
         
-        <div id="searchSection" class="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/60">
+        <div id="searchSection" class="max-w-sm mx-auto w-full bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/60">
             
             <div class="text-center flex flex-col items-center mb-8">
                 <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl flex items-center justify-center text-white text-2xl font-cooper shadow-lg mb-4 transform hover:scale-105 transition-transform">SSF</div>
@@ -58,9 +56,18 @@
                 <i class="fa-solid fa-arrow-left"></i> Start Over
             </button>
             
-            <div id="cardTargetNode" class="w-full shadow-2xl rounded-3xl overflow-hidden border border-white/60"></div>
+            <div id="cardTargetNode" class="w-full shadow-2xl rounded-3xl overflow-hidden border border-white/60 mb-6 bg-white"></div>
             
-            <button id="downloadBtn" onclick="downloadDigitalCardAsPDF(event)" class="w-full mt-6 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-2xl shadow-xl hover:shadow-rose-500/30 transform hover:-translate-y-0.5 active:scale-95 transition-all uppercase tracking-wider flex items-center justify-center gap-2 text-sm">
+            <div class="w-full bg-indigo-50 border border-indigo-100/50 text-indigo-800 p-4 rounded-2xl text-xs flex gap-3 shadow-sm mb-4 text-left">
+                <i class="fa-solid fa-lock text-indigo-500 mt-0.5 text-lg"></i>
+                <div class="leading-relaxed">
+                    <strong class="block mb-1 text-[11px] uppercase tracking-widest font-black text-indigo-900">Encrypted PDF Password</strong>
+                    The downloaded file is password protected. Format: <b>Birth Year</b> + <b>Last 4 digits of Mobile</b> <br>
+                    <span class="text-indigo-600/80 font-mono mt-1 inline-block">(e.g., if born 1995 and mobile ends in 7890 &rarr; <b>19957890</b>)</span>
+                </div>
+            </div>
+            
+            <button id="downloadBtn" onclick="downloadDigitalCardAsPDF(event)" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-2xl shadow-xl hover:shadow-rose-500/30 transform hover:-translate-y-0.5 active:scale-95 transition-all uppercase tracking-wider flex items-center justify-center gap-2 text-sm">
                 <i class="fa-solid fa-lock text-lg"></i> Download Secure PDF
             </button>
         </div>

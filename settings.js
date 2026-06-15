@@ -13,37 +13,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initializeSettingsData() {
     toggleInteractionLoader(true, "Synchronizing configurations...");
     try {
-        // 1. Fetch User Data
-        const { data: userData } = await supa.from('users').select('name, username').eq('username', STATE_CACHE.user).single();
-        if(userData) {
-            document.getElementById('modProfileName').value = userData.name;
-            document.getElementById('modUsername').value = userData.username;
+        // 1. Fetch User Data to pre-fill credentials
+        document.getElementById('modProfileName').value = STATE_CACHE.displayName || '';
+        document.getElementById('modUsername').value = STATE_CACHE.user || '';
+
+        const { data: userData, error: userError } = await supa.from('users').select('name, username').eq('username', STATE_CACHE.user).maybeSingle();
+        if(!userError && userData) {
+            document.getElementById('modProfileName').value = userData.name || '';
+            document.getElementById('modUsername').value = userData.username || '';
         }
 
-        // 2. Fetch Global Settings
-        const { data: settingsData } = await supa.from('settings').select('*');
-        if(settingsData) {
+        // 2. Fetch Global Settings (Status, UPI, Locks)
+        const { data: settingsData, error: settingsError } = await supa.from('settings').select('*');
+        if(settingsError) throw settingsError;
+
+        if(settingsData && settingsData.length > 0) {
             
             // Master Lock Status
             const masterStatus = settingsData.find(s => s.key === 'Status');
             if(masterStatus) {
                 const toggle = document.getElementById('globalStateToggle');
                 const label = document.getElementById('systemStateLabel');
-                toggle.checked = (masterStatus.value === 'ACTIVE');
+                const isActive = masterStatus.value === 'ACTIVE';
+                toggle.checked = isActive;
                 label.innerText = `Currently: ${masterStatus.value}`;
-                label.className = `text-[10px] font-mono font-bold uppercase tracking-widest block mt-0.5 ${masterStatus.value === 'ACTIVE' ? 'text-emerald-500' : 'text-rose-500'}`;
-            }
-
-            // Custom Field Labels
-            const customLabels = settingsData.find(s => s.key === 'CustomLabels');
-            if(customLabels && customLabels.value) {
-                try {
-                    const labels = JSON.parse(customLabels.value);
-                    document.getElementById('lblDistrict').value = labels.district || 'District';
-                    document.getElementById('lblBlock').value = labels.block || 'Block';
-                    document.getElementById('lblPanchayat').value = labels.panchayat || 'Panchayat';
-                    document.getElementById('lblUnit').value = labels.unit || 'Unit';
-                } catch(e) {}
+                label.className = `text-[10px] font-mono font-bold uppercase tracking-widest block mt-0.5 ${isActive ? 'text-emerald-500' : 'text-rose-500'}`;
             }
 
             // Field-Level Locks
@@ -54,34 +48,34 @@ async function initializeSettingsData() {
                 } catch(e) { activeFieldLocks = []; }
             }
 
-            // Membership Fees
-            const feeData = settingsData.find(s => s.key === 'MembershipFees');
-            if(feeData && feeData.value) {
-                try {
-                    const fees = JSON.parse(feeData.value);
-                    document.getElementById('feeState').value = fees.state || 100;
-                    document.getElementById('feeDistrict').value = fees.district || 50;
-                    document.getElementById('feeBlock').value = fees.block || 30;
-                    document.getElementById('feePanchayat').value = fees.panchayat || 30;
-                    document.getElementById('feeUnit').value = fees.unit || 30;
-                    document.getElementById('feeMember').value = fees.member || 30;
-                } catch(e) {}
-            }
-
             // UPI ID
-            const upiData = settingsData.find(s => s.key === 'UpiId');
+            const upiData = settingsData.find(s => s.key === 'MasterUPI');
             if(upiData && upiData.value) {
                 document.getElementById('upiIdInput').value = upiData.value;
             }
         }
 
-        // 3. Fetch Hierarchy for Lock Dropdowns
+        // 3. Fetch Fee Structure from the NEW dedicated table
+        const { data: feeData, error: feeError } = await supa.from('fee_structure').select('*');
+        if (!feeError && feeData) {
+            feeData.forEach(row => {
+                if (row.role_type === 'state') document.getElementById('feeState').value = row.amount;
+                if (row.role_type === 'district') document.getElementById('feeDistrict').value = row.amount;
+                if (row.role_type === 'block') document.getElementById('feeBlock').value = row.amount;
+                if (row.role_type === 'panchayat') document.getElementById('feePanchayat').value = row.amount;
+                if (row.role_type === 'unit') document.getElementById('feeUnit').value = row.amount;
+                if (row.role_type === 'member') document.getElementById('feeMember').value = row.amount;
+            });
+        }
+
+        // 4. Fetch Hierarchy for Lock Dropdowns
         const [dRes, bRes, pRes, uRes] = await Promise.all([
-            supa.from('districts').select('*'),
-            supa.from('blocks').select('*'),
-            supa.from('panchayats').select('*'),
-            supa.from('units').select('*')
+            supa.from('districts').select('district_name'),
+            supa.from('blocks').select('block_name'),
+            supa.from('panchayats').select('panchayat_name'),
+            supa.from('units').select('unit_name')
         ]);
+        
         structuralHierarchyData.districts = dRes.data || [];
         structuralHierarchyData.blocks = bRes.data || [];
         structuralHierarchyData.panchayats = pRes.data || [];
@@ -91,9 +85,11 @@ async function initializeSettingsData() {
         renderActiveLocks();
 
     } catch(err) {
-        spawnToastNotification("Failed to fetch settings.", "error");
+        console.error("Initialization Error:", err);
+        spawnToastNotification("Failed to load settings data.", "error");
+    } finally {
+        toggleInteractionLoader(false);
     }
-    toggleInteractionLoader(false);
 }
 
 // ==========================================
@@ -105,19 +101,29 @@ async function handleSecurityCredentialUpdate(e) {
     const newUsername = document.getElementById('modUsername').value.trim().toLowerCase();
     const newPass = document.getElementById('modPassword').value;
 
-    if(!newName || !newUsername) return;
+    if(!newName || !newUsername) return spawnToastNotification("Name and Username are required.", "error");
 
     toggleInteractionLoader(true, "Updating security credentials...");
     
     let updatePayload = { name: newName, username: newUsername };
 
     if (newPass) {
-        const msgBuffer = new TextEncoder().encode(newPass);                    
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashed = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        updatePayload.password_hash = hashed;
-        updatePayload.plain_password = newPass;
+        if (window.crypto && window.crypto.subtle) {
+            try {
+                const msgBuffer = new TextEncoder().encode(newPass);                    
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashed = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                updatePayload.password_hash = hashed;
+                updatePayload.plain_password = newPass; 
+            } catch (err) {
+                toggleInteractionLoader(false);
+                return spawnToastNotification("Failed to encrypt password.", "error");
+            }
+        } else {
+            toggleInteractionLoader(false);
+            return spawnToastNotification("Secure context required.", "error");
+        }
     }
 
     try {
@@ -132,94 +138,43 @@ async function handleSecurityCredentialUpdate(e) {
                 executeSecureLogout();
             }, 1500);
         } else {
+            STATE_CACHE.displayName = newName;
+            document.getElementById('sessionUserBadge').innerText = newName;
             document.getElementById('modPassword').value = '';
+            
+            let session = JSON.parse(localStorage.getItem('ssf_session_user'));
+            session.name = newName;
+            localStorage.setItem('ssf_session_user', JSON.stringify(session));
         }
     } catch(err) {
-        spawnToastNotification("Update failed. Username may be taken.", "error");
+        console.error(err);
+        spawnToastNotification(err.message || "Update failed.", "error");
+    } finally {
+        toggleInteractionLoader(false);
     }
-    toggleInteractionLoader(false);
 }
 
 // ==========================================
-// GLOBAL STATUS OVERRIDE
+// SYSTEM LOCKS (GLOBAL & FIELD)
 // ==========================================
 async function dispatchGlobalStateChange(cb) {
     const newState = cb.checked ? "ACTIVE" : "STOPPED";
     toggleInteractionLoader(true, `Switching global state...`);
     try {
-        await supa.from('settings').upsert([{ key: 'Status', value: newState }]);
-        await initializeSettingsData();
+        const { error } = await supa.from('settings').upsert([{ key: 'Status', value: newState }], { onConflict: 'key' });
+        if (error) throw error;
+        
+        await initializeSettingsData(); 
         spawnToastNotification(`System globally set to ${newState}`, "success");
     } catch(err) {
+        console.error(err);
         spawnToastNotification("Failed to update status.", "error");
-        cb.checked = !cb.checked; // Revert visually
+        cb.checked = !cb.checked; 
+    } finally {
+        toggleInteractionLoader(false);
     }
-    toggleInteractionLoader(false);
 }
 
-// ==========================================
-// FIELD LABEL CUSTOMIZATION
-// ==========================================
-async function handleFieldLabelUpdate(e) {
-    e.preventDefault();
-    const payload = {
-        district: document.getElementById('lblDistrict').value.trim() || 'District',
-        block: document.getElementById('lblBlock').value.trim() || 'Block',
-        panchayat: document.getElementById('lblPanchayat').value.trim() || 'Panchayat',
-        unit: document.getElementById('lblUnit').value.trim() || 'Unit'
-    };
-
-    toggleInteractionLoader(true, "Updating nomenclature guidelines...");
-    try {
-        await supa.from('settings').upsert([{ key: 'CustomLabels', value: JSON.stringify(payload) }]);
-        spawnToastNotification("Structural Labels Saved.", "success");
-    } catch(err) {
-        spawnToastNotification("Failed to save labels.", "error");
-    }
-    toggleInteractionLoader(false);
-}
-
-// ==========================================
-// MEMBERSHIP FEES & UPI 
-// ==========================================
-async function handleFeeUpdate(e) {
-    e.preventDefault();
-    const payload = {
-        state: document.getElementById('feeState').value,
-        district: document.getElementById('feeDistrict').value,
-        block: document.getElementById('feeBlock').value,
-        panchayat: document.getElementById('feePanchayat').value,
-        unit: document.getElementById('feeUnit').value,
-        member: document.getElementById('feeMember').value
-    };
-
-    toggleInteractionLoader(true, "Updating fee structure...");
-    try {
-        await supa.from('settings').upsert([{ key: 'MembershipFees', value: JSON.stringify(payload) }]);
-        spawnToastNotification("Membership Fees Updated.", "success");
-    } catch(err) {
-        spawnToastNotification("Failed to update fees.", "error");
-    }
-    toggleInteractionLoader(false);
-}
-
-async function handleUpiUpdate(e) {
-    e.preventDefault();
-    const upi = document.getElementById('upiIdInput').value.trim();
-
-    toggleInteractionLoader(true, "Routing payment gateways...");
-    try {
-        await supa.from('settings').upsert([{ key: 'UpiId', value: upi }]);
-        spawnToastNotification("Global UPI ID Updated.", "success");
-    } catch(err) {
-        spawnToastNotification("Failed to update UPI ID.", "error");
-    }
-    toggleInteractionLoader(false);
-}
-
-// ==========================================
-// FIELD-LEVEL DATA LOCKS
-// ==========================================
 function syncLockTargets() {
     const lvl = document.getElementById('lockLevelSelect').value;
     const tSel = document.getElementById('lockTargetSelect');
@@ -236,7 +191,7 @@ function syncLockTargets() {
         tSel.disabled = true;
     } else {
         tSel.disabled = false;
-        [...new Set(dataset)].sort().forEach(item => {
+        [...new Set(dataset)].filter(Boolean).sort().forEach(item => {
             tSel.innerHTML += `<option value="${item}">${item}</option>`;
         });
     }
@@ -264,13 +219,18 @@ async function removeFieldLock(index) {
 async function saveActiveLocksToDatabase(successMsg) {
     toggleInteractionLoader(true, "Updating security locks...");
     try {
-        await supa.from('settings').upsert([{ key: 'LockedFields', value: JSON.stringify(activeFieldLocks) }]);
+        const payload = JSON.stringify(activeFieldLocks);
+        const { error } = await supa.from('settings').upsert([{ key: 'LockedFields', value: payload }], { onConflict: 'key' });
+        if(error) throw error;
+        
         spawnToastNotification(successMsg, "success");
         renderActiveLocks();
     } catch(err) {
+        console.error(err);
         spawnToastNotification("Failed to update locks.", "error");
+    } finally {
+        toggleInteractionLoader(false);
     }
-    toggleInteractionLoader(false);
 }
 
 function renderActiveLocks() {
@@ -284,77 +244,69 @@ function renderActiveLocks() {
 
     activeFieldLocks.forEach((lock, index) => {
         container.innerHTML += `
-        <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-rose-100 shadow-sm animate-fade-in-up">
+        <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-rose-100 shadow-sm animate-fade-in-up">
             <div class="flex items-center gap-2 text-[10px]">
                 <span class="font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-1.5 py-0.5 rounded">${lock.level}</span>
                 <span class="font-bold text-slate-700">${lock.target}</span>
             </div>
-            <button onclick="removeFieldLock(${index})" class="w-6 h-6 rounded bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors"><i class="fa-solid fa-unlock text-[10px]"></i></button>
+            <button onclick="removeFieldLock(${index})" class="w-7 h-7 rounded bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors" title="Unlock Field"><i class="fa-solid fa-unlock text-[10px]"></i></button>
         </div>`;
     });
 }
 
 // ==========================================
-// BULK MEMBERSHIP IMPORT TOOLS
+// MEMBERSHIP FEES & UPI 
 // ==========================================
-function downloadBulkMembershipTemplate() {
-    const headers = ['name', 'father_name', 'dob', 'district', 'block', 'panchayat', 'unit', 'committee_role', 'phone', 'whatsapp', 'ps', 'pin_code'];
-    const blob = new Blob([headers.join(",") + "\n"], { type: 'text/csv;charset=utf-8;' });
-    const el = document.createElement("a"); 
-    el.href = URL.createObjectURL(blob); 
-    el.setAttribute("download", "SSF_Bulk_Membership_Template.csv"); 
-    el.click();
+async function handleFeeUpdate(e) {
+    e.preventDefault();
+    
+    // Map UI inputs to their exact row identifiers in the new 'fee_structure' table
+    const updates = [
+        { role_type: 'state', amount: parseFloat(document.getElementById('feeState').value) || 0 },
+        { role_type: 'district', amount: parseFloat(document.getElementById('feeDistrict').value) || 0 },
+        { role_type: 'block', amount: parseFloat(document.getElementById('feeBlock').value) || 0 },
+        { role_type: 'panchayat', amount: parseFloat(document.getElementById('feePanchayat').value) || 0 },
+        { role_type: 'unit', amount: parseFloat(document.getElementById('feeUnit').value) || 0 },
+        { role_type: 'member', amount: parseFloat(document.getElementById('feeMember').value) || 0 }
+    ];
+
+    toggleInteractionLoader(true, "Updating fee structure in database...");
+    try {
+        // Send a separate update command for each role_type row
+        const updatePromises = updates.map(item => 
+            supa.from('fee_structure')
+                .update({ amount: item.amount })
+                .eq('role_type', item.role_type)
+        );
+        
+        const results = await Promise.all(updatePromises);
+        
+        // Throw an error if any of the row updates failed
+        const errorResult = results.find(res => res.error);
+        if(errorResult) throw errorResult.error;
+
+        spawnToastNotification("Membership Fees Updated Successfully.", "success");
+    } catch(err) {
+        console.error(err);
+        spawnToastNotification("Failed to update fees. Check your database structure.", "error");
+    } finally {
+        toggleInteractionLoader(false);
+    }
 }
 
-function processBulkMembershipUpload(e) {
-    const file = e.target.files[0]; 
-    if(!file) return;
+async function handleUpiUpdate(e) {
+    e.preventDefault();
+    const upi = document.getElementById('upiIdInput').value.trim();
 
-    const reader = new FileReader(); 
-    toggleInteractionLoader(true, "Ingesting Bulk Database...");
-    
-    reader.onload = async function(evt) {
-        try {
-            const lines = evt.target.result.split(/\r?\n/);
-            const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-            const rows = [];
-            
-            if(!headers.includes('name') || !headers.includes('district') || !headers.includes('phone')) {
-                throw new Error("Invalid Template format.");
-            }
-
-            for(let i=1; i<lines.length; i++) {
-                let currentLine = lines[i].trim();
-                if(!currentLine) continue;
-                
-                let cols = currentLine.split(',');
-                if(cols.length !== headers.length) continue;
-
-                let rowObj = {};
-                headers.forEach((header, index) => {
-                    rowObj[header] = cols[index] ? cols[index].trim() : '';
-                });
-
-                rowObj.membership_id = "SSF" + Date.now().toString().slice(-6) + Math.floor(Math.random()*1000);
-                rowObj.created_by = STATE_CACHE.user;
-                rowObj.status = 'ACTIVE';
-
-                rows.push(rowObj);
-            }
-
-            if(rows.length > 0) {
-                const { error } = await supa.from('memberships').insert(rows);
-                if(error) throw error;
-                spawnToastNotification(`Successfully ingested ${rows.length} records.`, "success");
-            } else {
-                spawnToastNotification("File is empty or formatted incorrectly.", "error");
-            }
-        } catch(err) {
-            spawnToastNotification("Import Error. Ensure template headers remain unaltered.", "error");
-        }
+    toggleInteractionLoader(true, "Routing payment gateways...");
+    try {
+        const { error } = await supa.from('settings').upsert([{ key: 'MasterUPI', value: upi }], { onConflict: 'key' });
+        if(error) throw error;
+        spawnToastNotification("Global UPI ID Updated.", "success");
+    } catch(err) {
+        console.error(err);
+        spawnToastNotification("Failed to update UPI ID.", "error");
+    } finally {
         toggleInteractionLoader(false);
-    }; 
-    
-    reader.readAsText(file);
-    e.target.value = ''; 
+    }
 }

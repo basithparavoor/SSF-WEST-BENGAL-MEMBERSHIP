@@ -14,6 +14,7 @@ supa.from('districts').select('count').limit(1).then(({ data, error }) => {
     if (error) console.error("Supabase Connection Error:", error.message);
     else console.log("Supabase Connection Established.");
 });
+
 // Global Variables
 let STATE_CACHE = {
     user: null, role: null, displayName: "",
@@ -63,16 +64,13 @@ function enforceSession() {
     const isMasterAdmin = (STATE_CACHE.role === 'MasterAdmin');
     const isGlobalController = (isMasterAdmin || STATE_CACHE.role === 'Admin');
 
-    // 3. PAGE-LEVEL ROUTING LOCK (New Feature)
-    // List the files that only Admins should be allowed to open
+    // 3. PAGE-LEVEL ROUTING LOCK
     const adminOnlyPages = ['users.html', 'settings.html']; 
     const currentPath = window.location.pathname.toLowerCase();
     
     const isTryingToAccessAdminPage = adminOnlyPages.some(page => currentPath.includes(page));
 
     if (isTryingToAccessAdminPage && !isGlobalController) {
-        // If a lower-level operator tries to type "settings.html" into the URL, 
-        // they are instantly kicked back to the dashboard.
         window.location.href = 'dashboard.html';
         return false;
     }
@@ -85,7 +83,37 @@ function enforceSession() {
         document.querySelectorAll('.master-admin-only').forEach(el => el.classList.remove('hidden-force'));
     }
     
+    // 5. LIVE DATABASE SECURITY VALIDATION (The Fix)
+    // Runs asynchronously so it doesn't block the page from loading initially
+    verifyLiveAccountStatus(STATE_CACHE.user);
+    
     return true;
+}
+
+// NEW FUNCTION: Checks the live database to ensure the session hasn't been revoked
+async function verifyLiveAccountStatus(username) {
+    // Skip database check for offline fallback master accounts
+    if (username === 'masteradmin' || username === 'adminwb') return;
+
+    try {
+        const { data, error } = await supa.from('users')
+            .select('status')
+            .eq('username', username)
+            .maybeSingle();
+
+        // If user is deleted (no data) or status is no longer ACTIVE, nuke the session
+        if (error || !data || data.status !== 'ACTIVE') {
+            console.warn("Security Event: Account suspended or deleted. Terminating active session.");
+            spawnToastNotification("Security clearance revoked. Session terminated.", "error");
+            
+            // Short delay so the user can read the toast before being booted
+            setTimeout(() => {
+                executeSecureLogout();
+            }, 2000);
+        }
+    } catch (err) {
+        console.error("Background session validation failed:", err);
+    }
 }
 
 function executeSecureLogout() {
@@ -109,6 +137,7 @@ function setActiveSidebarLink(pageId) {
         mobileLink.classList.add('text-emerald-600');
     }
 }
+
 // ==========================================
 // UI HELPER: TOGGLE PASSWORD VISIBILITY
 // ==========================================
@@ -118,12 +147,10 @@ function togglePasswordVisibility(inputId, btn) {
     
     if (input.type === 'password') {
         input.type = 'text';
-        // Change icon to eye-slash (hidden)
         icon.classList.remove('fa-eye');
         icon.classList.add('fa-eye-slash');
     } else {
         input.type = 'password';
-        // Change icon back to normal eye
         icon.classList.remove('fa-eye-slash');
         icon.classList.add('fa-eye');
     }
