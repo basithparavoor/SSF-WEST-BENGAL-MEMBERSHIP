@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchAnalyticsData() {
-    toggleInteractionLoader(true, "Aggregating Telemetry...");
+    toggleInteractionLoader(true, "Loading Analytics...");
 
     try {
         // Fetch raw counts and entire membership dataset for deep analytics
@@ -203,4 +203,41 @@ function animateValue(id, start, end, duration) {
         obj.innerHTML = current;
         if (current == end) { clearInterval(timer); }
     }, stepTime);
+}
+
+// ==========================================
+// DYNAMIC LOGOUT VERIFICATION MODAL
+// ==========================================
+
+function promptLogout() {
+    // Check if modal exists to prevent duplicating it on multiple clicks
+    if (!document.getElementById('dynamicLogoutModal')) {
+        const modalHTML = `
+        <div id="dynamicLogoutModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-xl border border-slate-200 animate-fade-in-up">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
+                        <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 mb-1">Confirm Logout</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6">Are you sure you want to securely end your current session?</p>
+                    <div class="flex gap-3 w-full">
+                        <button onclick="closeLogoutPrompt()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
+                        <button onclick="executeSecureLogout()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Inject into the page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    // Show the modal
+    document.getElementById('dynamicLogoutModal').classList.remove('hidden');
+}
+
+function closeLogoutPrompt() {
+    const modal = document.getElementById('dynamicLogoutModal');
+    if (modal) modal.classList.add('hidden');
 }

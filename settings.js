@@ -65,6 +65,7 @@ async function initializeSettingsData() {
                 if (row.role_type === 'panchayat') document.getElementById('feePanchayat').value = row.amount;
                 if (row.role_type === 'unit') document.getElementById('feeUnit').value = row.amount;
                 if (row.role_type === 'member') document.getElementById('feeMember').value = row.amount;
+if (row.role_type === 'digital') document.getElementById('feeDigital').value = row.amount;
             });
         }
 
@@ -267,7 +268,8 @@ async function handleFeeUpdate(e) {
         { role_type: 'block', amount: parseFloat(document.getElementById('feeBlock').value) || 0 },
         { role_type: 'panchayat', amount: parseFloat(document.getElementById('feePanchayat').value) || 0 },
         { role_type: 'unit', amount: parseFloat(document.getElementById('feeUnit').value) || 0 },
-        { role_type: 'member', amount: parseFloat(document.getElementById('feeMember').value) || 0 }
+        { role_type: 'member', amount: parseFloat(document.getElementById('feeMember').value) || 0 },
+        { role_type: 'digital', amount: parseFloat(document.getElementById('feeDigital').value) || 0 } 
     ];
 
     toggleInteractionLoader(true, "Updating fee structure in database...");
@@ -309,4 +311,41 @@ async function handleUpiUpdate(e) {
     } finally {
         toggleInteractionLoader(false);
     }
+}
+
+// ==========================================
+// DYNAMIC LOGOUT VERIFICATION MODAL
+// ==========================================
+
+function promptLogout() {
+    // Check if modal exists to prevent duplicating it on multiple clicks
+    if (!document.getElementById('dynamicLogoutModal')) {
+        const modalHTML = `
+        <div id="dynamicLogoutModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-xl border border-slate-200 animate-fade-in-up">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
+                        <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 mb-1">Confirm Logout</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6">Are you sure you want to securely end your current session?</p>
+                    <div class="flex gap-3 w-full">
+                        <button onclick="closeLogoutPrompt()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
+                        <button onclick="executeSecureLogout()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Inject into the page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    // Show the modal
+    document.getElementById('dynamicLogoutModal').classList.remove('hidden');
+}
+
+function closeLogoutPrompt() {
+    const modal = document.getElementById('dynamicLogoutModal');
+    if (modal) modal.classList.add('hidden');
 }

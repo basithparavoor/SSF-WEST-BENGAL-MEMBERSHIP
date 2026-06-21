@@ -4,6 +4,13 @@
 .advice-render-context b, .advice-render-context strong, #committeeAdviceText b, #committeeAdviceText strong { font-weight: 900; color: #1e293b; }
 .dark .advice-render-context b, .dark .advice-render-context strong, .dark #committeeAdviceText b, .dark #committeeAdviceText strong { color: #f8fafc; }
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@font-face {
+    font-family: 'Cooper Black Web';
+    src: url('COOPBL.TTF') format('woff2'); 
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+    }
 .backdrop-blur-layer { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .ios-scroll { -webkit-overflow-scrolling: touch; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -14,7 +21,7 @@ select option { background-color: #ffffff; color: #0f172a; }
 
 /* Custom Branding Font */
 .font-cooper {
-    font-family: 'Cooper Black', serif;
+    font-family: 'Cooper Black Web', 'Cooper Black', serif;
     letter-spacing: 0.05em;
 }
 

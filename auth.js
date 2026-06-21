@@ -1,7 +1,13 @@
-// Auto-redirect if already logged in
+// Auto-redirect if already logged in based on role
 window.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('ssf_session_user')) {
-        window.location.href = 'dashboard.html';
+    const session = localStorage.getItem('ssf_session_user');
+    if (session) {
+        const userObj = JSON.parse(session);
+        if (userObj.role === 'MasterAdmin' || userObj.role === 'Admin') {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'members.html';
+        }
     }
 });
 
@@ -17,7 +23,7 @@ document.getElementById('authForm').addEventListener('submit', async function(e)
     const u = document.getElementById('authUsername').value.trim().toLowerCase();
     const p = document.getElementById('authPassword').value;
     
-    toggleInteractionLoader(true, "Validating User Credentials...");
+    toggleInteractionLoader(true, "Authorizing Login...");
 
     // Master Override Check
     if ((u === 'masteradmin' && p === 'SSF@WestBengal2026!') || (u === 'adminwb' && p === 'SSFAdmin2026!')) {
@@ -37,7 +43,7 @@ document.getElementById('authForm').addEventListener('submit', async function(e)
           .select('*').eq('username', u).eq('password_hash', inputHash).eq('status', 'ACTIVE').maybeSingle();
 
         if (error || !data) {
-           spawnToastNotification("Invalid credentials or account suspended.", "error");
+           spawnToastNotification("Invalid Username Or Password.", "error");
            toggleInteractionLoader(false);
            return;
         }
@@ -48,7 +54,13 @@ document.getElementById('authForm').addEventListener('submit', async function(e)
         };
 
         localStorage.setItem('ssf_session_user', JSON.stringify(sessionPayload));
-        window.location.href = 'dashboard.html'; // Redirect on success
+        
+        // FIX: Route based on role upon successful login
+        if (data.role === 'MasterAdmin' || data.role === 'Admin') {
+            window.location.href = 'dashboard.html'; 
+        } else {
+            window.location.href = 'members.html'; // Operators go straight to directory
+        }
     } catch(err) {
         spawnToastNotification("Authentication Failure.", "error");
         toggleInteractionLoader(false);

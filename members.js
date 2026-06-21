@@ -22,15 +22,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 // DATA FETCHING
 // ==========================================
 async function fetchInitialData() {
-    toggleInteractionLoader(true, "Synchronizing Directory...");
+    toggleInteractionLoader(true, "Loading Memberships...");
     try {
-        const [mRes, dRes, bRes, pRes, uRes] = await Promise.all([
-            supa.from('memberships').select('*').order('timestamp', { ascending: false }),
-            supa.from('districts').select('*'),
-            supa.from('blocks').select('*'),
-            supa.from('panchayats').select('*'),
-            supa.from('units').select('*')
-        ]);
+        let mQuery = supa.from('memberships').select('*').order('timestamp', { ascending: false });
+        let dQuery = supa.from('districts').select('*');
+        let bQuery = supa.from('blocks').select('*');
+        let pQuery = supa.from('panchayats').select('*');
+        let uQuery = supa.from('units').select('*');
+
+        const isGlobal = STATE_CACHE.role === 'Admin' || STATE_CACHE.role === 'MasterAdmin';
+
+        // Role-Based Data Isolation
+        if (!isGlobal) {
+            const af = STATE_CACHE.assignedFields;
+            
+            if (af.districts && af.districts.length > 0) {
+                mQuery = mQuery.in('district', af.districts);
+                dQuery = dQuery.in('district_name', af.districts);
+                bQuery = bQuery.in('district_name', af.districts);
+                pQuery = pQuery.in('district_name', af.districts);
+                uQuery = uQuery.in('district_name', af.districts);
+            }
+            if (af.blocks && af.blocks.length > 0) {
+                mQuery = mQuery.in('block', af.blocks);
+                bQuery = bQuery.in('block_name', af.blocks);
+                pQuery = pQuery.in('block_name', af.blocks);
+                uQuery = uQuery.in('block_name', af.blocks);
+            }
+            if (af.panchayats && af.panchayats.length > 0) {
+                mQuery = mQuery.in('panchayat', af.panchayats);
+                pQuery = pQuery.in('panchayat_name', af.panchayats);
+                uQuery = uQuery.in('panchayat_name', af.panchayats);
+            }
+            if (af.units && af.units.length > 0) {
+                mQuery = mQuery.in('unit', af.units);
+                uQuery = uQuery.in('unit_name', af.units);
+            }
+        }
+
+        const [mRes, dRes, bRes, pRes, unRes] = await Promise.all([mQuery, dQuery, bQuery, pQuery, uQuery]);
 
         allMembers = mRes.data || [];
         filteredMembers = [...allMembers];
@@ -38,14 +68,17 @@ async function fetchInitialData() {
         hierarchyData.districts = dRes.data || [];
         hierarchyData.blocks = bRes.data || [];
         hierarchyData.panchayats = pRes.data || [];
-        hierarchyData.units = uRes.data || [];
+        hierarchyData.units = unRes.data || [];
 
         document.getElementById('statTotalCount').innerText = allMembers.length;
         
         populateDistrictDropdown();
         applyFilters();
 
-    } catch(err) { spawnToastNotification("Failed to load directory.", "error"); }
+    } catch(err) { 
+        spawnToastNotification("Failed to load memberships.", "error"); 
+        console.error(err);
+    }
     toggleInteractionLoader(false);
 }
 
@@ -80,13 +113,24 @@ function applyFilters() {
     const d = document.getElementById('filterDistrict').value;
     const b = document.getElementById('filterBlock').value;
     const p = document.getElementById('filterPanchayat').value;
+    
+    // Fetch the new membership type filter safely
+    const typeEl = document.getElementById('filterType');
+    const type = typeEl ? typeEl.value : '';
 
     filteredMembers = allMembers.filter(m => {
         let match = true;
+        
+        // Existing territory and search filters
         if (d && m.district !== d) match = false;
         if (b && m.block !== b) match = false;
         if (p && m.panchayat !== p) match = false;
         if (q && !(m.name.toLowerCase().includes(q) || m.phone.includes(q) || m.membership_id.toLowerCase().includes(q))) match = false;
+        
+        // New Digital vs Physical Filter Logic
+        if (type === 'digital' && m.is_digital !== true) match = false;
+        if (type === 'physical' && m.is_digital === true) match = false;
+
         return match;
     });
 
@@ -137,6 +181,9 @@ function renderPagination() {
 // ==========================================
 // RENDER TABLE
 // ==========================================
+// ==========================================
+// RENDER TABLE
+// ==========================================
 function renderTable() {
     const tbody = document.getElementById('memberMasterTableBody');
     const mobileGrid = document.getElementById('memberMobileCardsGrid');
@@ -153,16 +200,18 @@ function renderTable() {
     const startIdx = (currentPage - 1) * pageSize;
     const currentSlice = filteredMembers.slice(startIdx, startIdx + pageSize);
 
-    const isAdmin = STATE_CACHE.role === 'Admin' || STATE_CACHE.role === 'MasterAdmin';
+    // We can safely remove the isAdmin check for memberships 
+    // since data filtering already isolates their view to their authorized fields.
 
     currentSlice.forEach((m, index) => {
         const isChecked = selectedMembers.has(m.membership_id) ? 'checked' : '';
         
+        // Removed the isAdmin checks here so all field operators can edit/delete their own members
         let actionButtons = `
             <div class="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                 <button onclick="viewMemberDetails('${m.membership_id}')" class="w-7 h-7 rounded-md bg-slate-50 text-indigo-500 hover:bg-indigo-50 border border-slate-100 flex items-center justify-center transition-colors" title="View & Download ID"><i class="fa-solid fa-id-card text-[10px]"></i></button>
-                ${isAdmin ? `<button onclick="openMembershipFormModal('${m.membership_id}', event)" class="w-7 h-7 rounded-md bg-slate-50 text-emerald-500 hover:bg-emerald-50 border border-slate-100 transition-colors flex items-center justify-center" title="Edit Member"><i class="fa-solid fa-pen text-[10px]"></i></button>` : ''}
-                ${isAdmin ? `<button onclick="triggerDeleteModal('${m.membership_id}')" class="w-7 h-7 rounded-md bg-slate-50 text-slate-400 hover:text-rose-500 border border-slate-100 transition-colors flex items-center justify-center" title="Revoke Membership"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
+                <button onclick="openMembershipFormModal('${m.membership_id}', event)" class="w-7 h-7 rounded-md bg-slate-50 text-emerald-500 hover:bg-emerald-50 border border-slate-100 transition-colors flex items-center justify-center" title="Edit Member"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                <button onclick="triggerDeleteModal('${m.membership_id}')" class="w-7 h-7 rounded-md bg-slate-50 text-slate-400 hover:text-rose-500 border border-slate-100 transition-colors flex items-center justify-center" title="Revoke Membership"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
             </div>`;
 
         // Desktop Row
@@ -175,7 +224,10 @@ function renderTable() {
                         <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-slate-200 shrink-0"><img src="${m.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" crossorigin="anonymous" class="w-full h-full object-cover"></div>
                         <div>
                             <div class="font-black text-slate-900">${m.name}</div>
-                            <div class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded inline-block mt-0.5">${m.membership_id}</div>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded inline-block">${m.membership_id}</span>
+                                ${m.is_digital ? '<span class="text-[8px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Digital</span>' : '<span class="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Physical</span>'}
+                            </div>
                         </div>
                     </div>
                 </td>
@@ -196,7 +248,10 @@ function renderTable() {
                     <div class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0"><img src="${m.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" crossorigin="anonymous" class="w-full h-full object-cover"></div>
                     <div class="flex-1">
                         <h4 class="text-base font-black text-slate-900 leading-tight">${m.name}</h4>
-                        <span class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded inline-block mt-1">${m.membership_id}</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[9px] font-mono bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded inline-block">${m.membership_id}</span>
+                            ${m.is_digital ? '<span class="text-[8px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Digital</span>' : '<span class="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Physical</span>'}
+                        </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-[10px] font-medium text-slate-600 mb-4">
@@ -210,7 +265,6 @@ function renderTable() {
             </div>`;
     });
 }
-
 // ==========================================
 // SELECTION LOGIC
 // ==========================================
@@ -397,9 +451,14 @@ async function downloadDigitalCardAsPDF(event) {
 function openMembershipFormModal(id = null, e = null) {
     if(e) e.stopPropagation(); 
     document.getElementById('enrollmentForm').reset();
+    
+    // Reset the digital membership checkbox for new entries
+    const digitalCheckbox = document.getElementById('formIsDigital');
+    if (digitalCheckbox) digitalCheckbox.checked = false; 
+    
     document.getElementById('formPhotoPreview').src = '';
     document.getElementById('formLevel').value = "";
-syncRoleDropdown();
+    syncRoleDropdown();
     document.getElementById('formPhotoPreview').classList.add('hidden');
     document.getElementById('formPhotoPlaceholder').classList.remove('hidden');
     croppedBlob = null;
@@ -418,20 +477,19 @@ syncRoleDropdown();
             document.getElementById('formFather').value = m.father_name;
             document.getElementById('formDob').value = m.dob;
             document.getElementById('formBloodGroup').value = m.blood_group || 'Unknown';
-           // ... existing code ...
-document.getElementById('formPhone').value = m.phone; // Keeping surrounding context
+            document.getElementById('formPhone').value = m.phone; 
 
-// Extract Level from the saved role (e.g., split "District President" into "District")
-let savedRole = m.committee_role || 'Unit Member';
-let extractedLevel = savedRole.split(' ')[0]; 
+            // Extract Level from the saved role (e.g., split "District President" into "District")
+            let savedRole = m.committee_role || 'Unit Member';
+            let extractedLevel = savedRole.split(' ')[0]; 
 
-const validLevels = ['State', 'District', 'Block', 'Panchayat', 'Unit'];
-if (!validLevels.includes(extractedLevel)) extractedLevel = 'Unit'; // Fallback
+            const validLevels = ['State', 'District', 'Block', 'Panchayat', 'Unit'];
+            if (!validLevels.includes(extractedLevel)) extractedLevel = 'Unit'; // Fallback
 
-// Set Level and trigger sync to populate the Role dropdown
-document.getElementById('formLevel').value = extractedLevel;
-syncRoleDropdown(savedRole);
-// ... existing code ...
+            // Set Level and trigger sync to populate the Role dropdown
+            document.getElementById('formLevel').value = extractedLevel;
+            syncRoleDropdown(savedRole);
+            
             document.getElementById('formWhatsapp').value = m.whatsapp;
             document.getElementById('formEmail').value = m.email || '';
             
@@ -445,6 +503,9 @@ syncRoleDropdown(savedRole);
             
             document.getElementById('formPS').value = m.police_station;
             document.getElementById('formPin').value = m.pin_code;
+            
+            // Populate the digital membership checkbox for edits
+            if (digitalCheckbox) digitalCheckbox.checked = m.is_digital || false;
             
             if(m.photo_url) {
                 document.getElementById('formPhotoPreview').src = m.photo_url;
@@ -557,7 +618,8 @@ async function handleMembershipSubmit(e) {
         panchayat: document.getElementById('formPanchayat').value,
         unit: document.getElementById('formUnit').value,
         police_station: document.getElementById('formPS').value.trim().toUpperCase(),
-        pin_code: document.getElementById('formPin').value.trim()
+        pin_code: document.getElementById('formPin').value.trim(),
+        is_digital: document.getElementById('formIsDigital').checked
     };
 
     try {
@@ -705,4 +767,41 @@ function syncRoleDropdown(selectedFullRole = null) {
     if (selectedFullRole) {
         roleSel.value = selectedFullRole;
     }
+}
+
+// ==========================================
+// DYNAMIC LOGOUT VERIFICATION MODAL
+// ==========================================
+
+function promptLogout() {
+    // Check if modal exists to prevent duplicating it on multiple clicks
+    if (!document.getElementById('dynamicLogoutModal')) {
+        const modalHTML = `
+        <div id="dynamicLogoutModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-xl border border-slate-200 animate-fade-in-up">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
+                        <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 mb-1">Confirm Logout</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6">Are you sure you want to securely end your current session?</p>
+                    <div class="flex gap-3 w-full">
+                        <button onclick="closeLogoutPrompt()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
+                        <button onclick="executeSecureLogout()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Inject into the page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    // Show the modal
+    document.getElementById('dynamicLogoutModal').classList.remove('hidden');
+}
+
+function closeLogoutPrompt() {
+    const modal = document.getElementById('dynamicLogoutModal');
+    if (modal) modal.classList.add('hidden');
 }

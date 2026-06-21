@@ -20,15 +20,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 // CORE DATA FETCHING
 // ==========================================
 async function fetchMasterData() {
-    toggleInteractionLoader(true, "Synchronizing Nodes...");
+    toggleInteractionLoader(true, "Loading Units...");
     try {
-        const [dRes, bRes, pRes, uRes, mRes] = await Promise.all([
-            supa.from('districts').select('*'),
-            supa.from('blocks').select('*'),
-            supa.from('panchayats').select('*'),
-            supa.from('units').select('*').order('unit_name', { ascending: true }),
-            supa.from('memberships').select('unit, panchayat, block, district') 
-        ]);
+        let dQuery = supa.from('districts').select('*');
+        let bQuery = supa.from('blocks').select('*');
+        let pQuery = supa.from('panchayats').select('*');
+        let uQuery = supa.from('units').select('*').order('unit_name', { ascending: true });
+        let mQuery = supa.from('memberships').select('unit, panchayat, block, district');
+
+        const isGlobal = STATE_CACHE.role === 'Admin' || STATE_CACHE.role === 'MasterAdmin';
+
+        // Role-Based Data Isolation
+        if (!isGlobal) {
+            const af = STATE_CACHE.assignedFields;
+            if (af.districts && af.districts.length > 0) {
+                dQuery = dQuery.in('district_name', af.districts);
+                bQuery = bQuery.in('district_name', af.districts);
+                pQuery = pQuery.in('district_name', af.districts);
+                uQuery = uQuery.in('district_name', af.districts);
+                mQuery = mQuery.in('district', af.districts);
+            }
+            if (af.blocks && af.blocks.length > 0) {
+                bQuery = bQuery.in('block_name', af.blocks);
+                pQuery = pQuery.in('block_name', af.blocks);
+                uQuery = uQuery.in('block_name', af.blocks);
+                mQuery = mQuery.in('block', af.blocks);
+            }
+            if (af.panchayats && af.panchayats.length > 0) {
+                pQuery = pQuery.in('panchayat_name', af.panchayats);
+                uQuery = uQuery.in('panchayat_name', af.panchayats);
+                mQuery = mQuery.in('panchayat', af.panchayats);
+            }
+            if (af.units && af.units.length > 0) {
+                uQuery = uQuery.in('unit_name', af.units);
+                mQuery = mQuery.in('unit', af.units);
+            }
+        }
+
+        const [dRes, bRes, pRes, uRes, mRes] = await Promise.all([dQuery, bQuery, pQuery, uQuery, mQuery]);
 
         if (dRes.error) throw dRes.error;
         if (bRes.error) throw bRes.error;
@@ -486,4 +515,41 @@ function exportToPDF() {
     });
 
     doc.save("SSF_Units_Export.pdf");
+}
+
+// ==========================================
+// DYNAMIC LOGOUT VERIFICATION MODAL
+// ==========================================
+
+function promptLogout() {
+    // Check if modal exists to prevent duplicating it on multiple clicks
+    if (!document.getElementById('dynamicLogoutModal')) {
+        const modalHTML = `
+        <div id="dynamicLogoutModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-xl border border-slate-200 animate-fade-in-up">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
+                        <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 mb-1">Confirm Logout</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6">Are you sure you want to securely end your current session?</p>
+                    <div class="flex gap-3 w-full">
+                        <button onclick="closeLogoutPrompt()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
+                        <button onclick="executeSecureLogout()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Inject into the page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    // Show the modal
+    document.getElementById('dynamicLogoutModal').classList.remove('hidden');
+}
+
+function closeLogoutPrompt() {
+    const modal = document.getElementById('dynamicLogoutModal');
+    if (modal) modal.classList.add('hidden');
 }

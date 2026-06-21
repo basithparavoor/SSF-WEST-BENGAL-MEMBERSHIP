@@ -2,7 +2,9 @@
 <html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
-  <title>Financial Ledger | SSF West Bengal</title>
+  <title>Payments | SSF West Bengal</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -43,7 +45,7 @@
         <div class="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
         <i class="fa-solid fa-coins text-emerald-500 animate-pulse"></i>
     </div>
-    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-white uppercase font-mono shadow-sm">Syncing Financial Ledgers...</p>
+    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-white uppercase font-mono shadow-sm">Loading Payments...</p>
   </div>
 
   <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-30 shadow-sm transition-all">
@@ -59,31 +61,42 @@
             <span id="sessionRoleTag" class="text-[8px] font-black text-emerald-600 uppercase mt-0.5 font-mono">-</span>
           </div>
         </div>
-        <button onclick="executeSecureLogout()" class="p-2 w-9 h-9 flex items-center justify-center text-rose-600 bg-rose-50 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/30 rounded-xl text-xs transition-all duration-300 active:scale-95"><i class="fa-solid fa-right-from-bracket"></i></button>
+        <button onclick="promptLogout()" class="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 hover:scale-105 rounded-xl text-xs transition-all duration-300 active:scale-95"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
     </div>
   </header>
 
   <div class="max-w-[1400px] mx-auto w-full px-4 py-6 flex-1 flex flex-col lg:flex-row gap-6 pb-20 lg:pb-6">
     
-    <aside class="hidden lg:flex w-60 shrink-0 flex-col gap-1 pr-4 border-r border-slate-200">
-      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono">Modules</p>
-      <a href="dashboard.html" id="nav-dashboard" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
-      <a href="members.html" id="nav-members" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
-      <a href="users.html" id="nav-users" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
-      <a href="districts.html" id="nav-districts" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
-      <a href="units.html" id="nav-units" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
-      <a href="alerts.html" id="nav-alerts" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
-      <a href="settings.html" id="nav-settings" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100 hover:translate-x-1 duration-300"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
-      <a href="payments.html" id="nav-payments" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 bg-slate-900 text-emerald-400 shadow-lg shadow-slate-900/20 translate-x-1"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
-      <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all mt-4 w-full gap-2.5 hover:-translate-y-0.5 duration-300"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
-    </aside>
+   <aside class="hidden lg:flex w-60 shrink-0 flex-col gap-1 pr-4 border-r border-slate-200">
+  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono">Modules</p>
+  
+  <a href="dashboard.html" id="nav-dashboard" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
+  
+  <a href="members.html" id="nav-members" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
+  
+  <a href="users.html" id="nav-users" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
+  
+  <a href="districts.html" id="nav-districts" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
+  
+  <a href="units.html" id="nav-units" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
+  
+  <a href="alerts.html" id="nav-alerts" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
+  
+  <a href="export-master.html" id="nav-export" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-file-csv w-4 text-center"></i> Master Export</a>
+
+  <a href="settings.html" id="nav-settings" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
+  
+  <a href="payments.html" id="nav-payments" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
+  
+  <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all mt-4 w-full gap-2.5"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
+</aside>
 
     <main class="flex-1 min-w-0 flex flex-col gap-6">
       
       <div class="flex flex-col justify-between items-start gap-1 transition-all duration-500">
-        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Financial Ledger</h2>
-        <p class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">System-wide transaction and payment verification.</p>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Payments Overview</h2>
+        <p class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Transaction and payment verification.</p>
       </div>
 
       <div class="bg-gradient-to-br from-[#064e3b] via-[#0f7652] to-[#047857] rounded-[2rem] p-6 sm:p-8 shadow-2xl shadow-emerald-900/20 text-white flex flex-col relative overflow-hidden transition-all duration-700">
@@ -92,7 +105,7 @@
           <div class="absolute left-10 -bottom-20 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
 
           <div class="relative z-10">
-              <h3 class="text-[11px] font-black uppercase tracking-widest mb-6 text-emerald-100 font-mono flex items-center gap-2"><i class="fa-solid fa-layer-group opacity-70"></i> Field Level Payment Status</h3>
+              <h3 class="text-[11px] font-black uppercase tracking-widest mb-6 text-emerald-100 font-mono flex items-center gap-2"><i class="fa-solid fa-layer-group opacity-70"></i> Payment Status</h3>
               
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mb-8 pb-8 border-b border-white/20">
                   <div class="glass-card rounded-2xl p-4 sm:p-5 hover-float cursor-default">
@@ -112,7 +125,7 @@
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div class="flex items-center gap-2 bg-black/20 rounded-xl px-4 py-2 border border-white/10 backdrop-blur-sm">
                       <i class="fa-solid fa-location-crosshairs text-emerald-300 text-xs"></i>
-                      <p class="text-[10px] font-mono text-emerald-100 uppercase tracking-widest">Active Scope: <span id="bannerFieldName" class="font-bold text-white uppercase ml-1">STATE_GLOBAL</span></p>
+                      <p class="text-[10px] font-mono text-emerald-100 uppercase tracking-widest">FIELD NAME: <span id="bannerFieldName" class="font-bold text-white uppercase ml-1">STATE_GLOBAL</span></p>
                   </div>
                   <button id="btnPayNow" class="group bg-white text-emerald-900 hover:bg-emerald-50 font-black text-xs px-6 py-3.5 rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_10px_25px_rgba(255,255,255,0.3)] transition-all duration-300 flex items-center justify-center gap-2.5 uppercase tracking-widest whitespace-nowrap active:scale-95"><i class="fa-solid fa-qrcode text-emerald-600 group-hover:scale-110 transition-transform"></i> Pay Now Via UPI</button>
               </div>
@@ -128,7 +141,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="relative group">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs group-focus-within:text-indigo-500 transition-colors"></i>
-            <input type="text" id="filterSearch" placeholder="Search by Transaction ID or Node..." class="w-full h-11 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] rounded-xl pl-9 pr-3 text-xs outline-none font-medium transition-all duration-300" oninput="applyFilters()">
+            <input type="text" id="filterSearch" placeholder="Search by Transaction ID or Field Name..." class="w-full h-11 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] rounded-xl pl-9 pr-3 text-xs outline-none font-medium transition-all duration-300" oninput="applyFilters()">
           </div>
           <select id="filterStatus" class="w-full h-11 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(99,102,241,0.1)] rounded-xl px-4 text-xs outline-none cursor-pointer font-bold text-slate-700 transition-all duration-300" onchange="applyFilters()">
               <option value="">Show All Transactions</option>
@@ -185,14 +198,31 @@
     </main>
   </div>
 
-  <nav class="lg:hidden bg-white/95 border-t border-slate-200 fixed bottom-0 left-0 right-0 h-16 flex items-center justify-around px-2 backdrop-blur-lg z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] pb-safe transition-all">
-      <a href="dashboard.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-chart-line text-sm mb-1"></i><span class="text-[9px] font-bold">Home</span></a>
-      <a href="members.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-address-book text-sm mb-1"></i><span class="text-[9px] font-bold">Members</span></a>
-      <a href="districts.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-map-location-dot text-sm mb-1"></i><span class="text-[9px] font-bold">Map</span></a>
-      <a href="units.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-sitemap text-sm mb-1"></i><span class="text-[9px] font-bold">Units</span></a>
-      <a href="settings.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-gears text-sm mb-1"></i><span class="text-[9px] font-bold">Setup</span></a>
-      <a href="payments.html" class="flex flex-col items-center justify-center flex-1 h-full text-emerald-600 relative"><span class="absolute top-1 w-8 h-1 bg-emerald-600 rounded-full"></span><i class="fa-solid fa-indian-rupee-sign text-lg mb-1 mt-1"></i><span class="text-[9px] font-black">Pay</span></a>
-  </nav>
+  <nav class="lg:hidden bg-white/95 border-t border-slate-200 fixed bottom-0 left-0 right-0 h-14 flex items-center justify-around px-2 backdrop-blur-layer z-30 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar" style="padding-bottom: env(safe-area-inset-bottom);">
+    <!-- State & Master Admin Only -->
+    <a href="dashboard.html" id="mob-dashboard" class="admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-chart-line text-sm"></i><span class="text-[8px] font-bold mt-1">Home</span></a>
+    
+    <!-- Everyone -->
+    <a href="members.html" id="mob-members" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-address-book text-sm"></i><span class="text-[8px] font-bold mt-1">Members</span></a>
+    
+    <!-- Master Admin Only -->
+    <a href="users.html" id="mob-users" class="master-admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-users text-sm"></i><span class="text-[8px] font-bold mt-1">Users</span></a>
+    
+    <!-- State & Master Admin Only -->
+    <a href="districts.html" id="mob-districts" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-map-location-dot text-sm"></i><span class="text-[8px] font-bold mt-1">Map</span></a>
+    
+    <!-- Master Admin Only: EXPORT -->
+    <a href="export-master.html" id="mob-export" class="master-admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-file-csv text-sm"></i><span class="text-[8px] font-bold mt-1">Export</span></a>
+
+    <!-- Everyone -->
+    <a href="units.html" id="mob-units" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-sitemap text-sm"></i><span class="text-[8px] font-bold mt-1">Units</span></a>
+    
+    <!-- State & Master Admin Only -->
+    <a href="settings.html" id="mob-settings" class="admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-gears text-sm"></i><span class="text-[8px] font-bold mt-1">Setup</span></a>
+    
+    <!-- Everyone -->
+    <a href="payments.html" id="mob-payments" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-indian-rupee-sign text-sm"></i><span class="text-[8px] font-bold mt-1">Pay</span></a>
+</nav>
 
   <div id="upiQRModal" class="backdrop-blur-md bg-slate-950/80 hidden fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 transition-all duration-300">
     <div class="bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-slate-200 w-full max-w-sm p-8 space-y-5 text-center transform scale-95 transition-all duration-300 flex flex-col items-center relative overflow-hidden">

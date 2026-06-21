@@ -17,6 +17,26 @@ let pageSize = 10;
 document.addEventListener('DOMContentLoaded', async () => {
     if (!enforceSession()) return;
     setActiveSidebarLink('districts');
+    
+    // STRICT VIEW-ONLY ENFORCEMENT
+    const isGlobal = STATE_CACHE.role === 'Admin' || STATE_CACHE.role === 'MasterAdmin';
+    if (!isGlobal) {
+        // Automatically hide all action buttons (Add, Edit, Delete, Bulk Upload) for non-admins
+        const style = document.createElement('style');
+        style.innerHTML = `
+            button[onclick*="Template"], 
+            button[onclick*="Upload"], 
+            button[onclick*="Add"],
+            button[onclick*="Edit"],
+            button[onclick*="Delete"],
+            button[onclick*="Modal"],
+            input[type="file"] { 
+                display: none !important; 
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     await fetchHierarchyData();
 });
 
@@ -24,15 +44,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 // DATA CORE FETCH & METRICS
 // ==========================================
 async function fetchHierarchyData() {
-    toggleInteractionLoader(true, "Building Matrix Tree...");
+    toggleInteractionLoader(true, "Loading Fields...");
     try {
-        const [dRes, bRes, pRes, uRes, mRes] = await Promise.all([
-            supa.from('districts').select('*'),
-            supa.from('blocks').select('*'),
-            supa.from('panchayats').select('*'),
-            supa.from('units').select('*'),
-            supa.from('memberships').select('district, block, panchayat, unit')
-        ]);
+        let dQuery = supa.from('districts').select('*');
+        let bQuery = supa.from('blocks').select('*');
+        let pQuery = supa.from('panchayats').select('*');
+        let uQuery = supa.from('units').select('*');
+        let mQuery = supa.from('memberships').select('district, block, panchayat, unit');
+
+        const isGlobal = STATE_CACHE.role === 'Admin' || STATE_CACHE.role === 'MasterAdmin';
+
+        // Role-Based Data Isolation
+        if (!isGlobal) {
+            const af = STATE_CACHE.assignedFields;
+            if (af.districts && af.districts.length > 0) {
+                dQuery = dQuery.in('district_name', af.districts);
+                bQuery = bQuery.in('district_name', af.districts);
+                pQuery = pQuery.in('district_name', af.districts);
+                uQuery = uQuery.in('district_name', af.districts);
+                mQuery = mQuery.in('district', af.districts);
+            }
+            if (af.blocks && af.blocks.length > 0) {
+                bQuery = bQuery.in('block_name', af.blocks);
+                pQuery = pQuery.in('block_name', af.blocks);
+                uQuery = uQuery.in('block_name', af.blocks);
+                mQuery = mQuery.in('block', af.blocks);
+            }
+            if (af.panchayats && af.panchayats.length > 0) {
+                pQuery = pQuery.in('panchayat_name', af.panchayats);
+                uQuery = uQuery.in('panchayat_name', af.panchayats);
+                mQuery = mQuery.in('panchayat', af.panchayats);
+            }
+            if (af.units && af.units.length > 0) {
+                uQuery = uQuery.in('unit_name', af.units);
+                mQuery = mQuery.in('unit', af.units);
+            }
+        }
+
+        const [dRes, bRes, pRes, uRes, mRes] = await Promise.all([dQuery, bQuery, pQuery, uQuery, mQuery]);
 
         allDistricts = dRes.data || [];
         filteredDistricts = [...allDistricts];
@@ -46,6 +95,7 @@ async function fetchHierarchyData() {
 
     } catch(err) {
         spawnToastNotification("Failed to fetch node architecture.", "error");
+        console.error(err);
     }
     toggleInteractionLoader(false);
 }
@@ -543,4 +593,41 @@ function exportDistrictData(fmt) {
         const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
         const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.setAttribute("download", `SSF_Districts_Export.csv`); el.click();
     }
+}
+
+// ==========================================
+// DYNAMIC LOGOUT VERIFICATION MODAL
+// ==========================================
+
+function promptLogout() {
+    // Check if modal exists to prevent duplicating it on multiple clicks
+    if (!document.getElementById('dynamicLogoutModal')) {
+        const modalHTML = `
+        <div id="dynamicLogoutModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-xl border border-slate-200 animate-fade-in-up">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
+                        <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 mb-1">Confirm Logout</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6">Are you sure you want to securely end your current session?</p>
+                    <div class="flex gap-3 w-full">
+                        <button onclick="closeLogoutPrompt()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
+                        <button onclick="executeSecureLogout()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Inject into the page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    // Show the modal
+    document.getElementById('dynamicLogoutModal').classList.remove('hidden');
+}
+
+function closeLogoutPrompt() {
+    const modal = document.getElementById('dynamicLogoutModal');
+    if (modal) modal.classList.add('hidden');
 }

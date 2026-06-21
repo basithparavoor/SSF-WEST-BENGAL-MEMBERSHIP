@@ -44,47 +44,63 @@ function spawnToastNotification(msg, type='success') {
 function enforceSession() {
     const session = localStorage.getItem('ssf_session_user');
     if (!session) {
-        window.location.href = 'index.html'; // Kick to login if not authenticated
+        if (!window.location.pathname.includes('index.html')) {
+            window.location.href = 'index.html';
+        }
         return false;
     }
     
     const userObj = JSON.parse(session);
     STATE_CACHE.user = userObj.username;
     STATE_CACHE.role = userObj.role;
-    STATE_CACHE.displayName = userObj.name;
-    STATE_CACHE.assignedFields = userObj.assigned_fields_json;
+    STATE_CACHE.displayName = userObj.displayName || userObj.name;
+    STATE_CACHE.assignedFields = userObj.assignedFields || { districts: [], blocks: [], panchayats: [], units: [] };
     
-    // 1. Update Header Badges
     const nameBadge = document.getElementById('sessionUserBadge');
     const roleBadge = document.getElementById('sessionRoleTag');
     if(nameBadge) nameBadge.innerText = STATE_CACHE.displayName;
     if(roleBadge) roleBadge.innerText = STATE_CACHE.role;
     
-    // 2. Identify Admin Status
     const isMasterAdmin = (STATE_CACHE.role === 'MasterAdmin');
     const isGlobalController = (isMasterAdmin || STATE_CACHE.role === 'Admin');
 
-    // 3. PAGE-LEVEL ROUTING LOCK
-    const adminOnlyPages = ['users.html', 'settings.html']; 
     const currentPath = window.location.pathname.toLowerCase();
     
-    const isTryingToAccessAdminPage = adminOnlyPages.some(page => currentPath.includes(page));
-
-    if (isTryingToAccessAdminPage && !isGlobalController) {
-        window.location.href = 'dashboard.html';
+    const masterAdminPages = ['users.html', 'alerts.html', 'export-master.html'];
+    if (masterAdminPages.some(page => currentPath.includes(page)) && !isMasterAdmin) {
+        window.location.href = 'members.html';
         return false;
     }
 
-    // 4. ELEMENT-LEVEL SECURITY (Unhide secure tools for Admins)
+    // Notice we REMOVED 'districts.html' from this block so operators can access it
+    const adminPages = ['dashboard.html', 'settings.html']; 
+    if (adminPages.some(page => currentPath.includes(page)) && !isGlobalController) {
+        window.location.href = 'members.html';
+        return false;
+    }
+
     if (isGlobalController) {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden-force'));
+    } else {
+        // DYNAMIC RENAMING FOR STANDARD OPERATORS
+        const navDistDesktop = document.getElementById('nav-districts');
+        const navDistMobile = document.getElementById('mob-districts');
+        
+        if (navDistDesktop) navDistDesktop.innerHTML = '<i class="fa-solid fa-map-location-dot w-4 text-center"></i> Fields';
+        if (navDistMobile) navDistMobile.innerHTML = '<i class="fa-solid fa-map-location-dot text-sm"></i><span class="text-[8px] font-bold mt-1">Fields</span>';
+        
+        // Rename the page header if they are currently looking at the districts page
+        if (currentPath.includes('districts.html')) {
+            const pageHeader = document.querySelector('h2');
+            if (pageHeader) pageHeader.innerText = "My Assigned Fields";
+            document.title = "Fields | SSF West Bengal";
+        }
     }
+
     if (isMasterAdmin) {
         document.querySelectorAll('.master-admin-only').forEach(el => el.classList.remove('hidden-force'));
     }
     
-    // 5. LIVE DATABASE SECURITY VALIDATION (The Fix)
-    // Runs asynchronously so it doesn't block the page from loading initially
     verifyLiveAccountStatus(STATE_CACHE.user);
     
     return true;

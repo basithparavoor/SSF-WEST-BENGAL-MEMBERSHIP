@@ -2,7 +2,9 @@
 <html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
-  <title>Memberships | SSF West Bengal</title>
+  <title>Members | SSF West Bengal</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -29,7 +31,7 @@
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
   <div id="globalLoader" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm transition-opacity z-[99]">
     <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent mb-3 shadow-lg"></div>
-    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Synchronizing...</p>
+    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Loading..</p>
   </div>
 
   <header class="bg-white border-b border-slate-200/60 sticky top-0 z-30 shadow-sm">
@@ -45,40 +47,51 @@
             <span id="sessionRoleTag" class="text-[8px] font-black text-slate-400 uppercase mt-0.5 font-mono">-</span>
           </div>
         </div>
-        <button onclick="executeSecureLogout()" class="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs transition-all"><i class="fa-solid fa-right-from-bracket"></i></button>
+        <button onclick="promptLogout()" class="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl text-xs transition-all"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
     </div>
   </header>
 
   <div class="max-w-[1400px] mx-auto w-full px-4 py-6 flex-1 flex flex-col lg:flex-row gap-6 pb-20 lg:pb-6">
     
-    <aside class="hidden lg:flex w-60 shrink-0 flex-col gap-1 pr-4 border-r border-slate-200">
-      <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono">Modules</p>
-      <a href="dashboard.html" id="nav-dashboard" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
-      <a href="members.html" id="nav-members" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 bg-slate-900 text-white shadow-md"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
-      <a href="users.html" id="nav-users" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
-      <a href="districts.html" id="nav-districts" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
-      <a href="units.html" id="nav-units" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
-      <a href="alerts.html" id="nav-alerts" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
-      <a href="settings.html" id="nav-settings" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
-      <a href="payments.html" id="nav-payments" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
-      <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all mt-4 w-full gap-2.5"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
-    </aside>
+   <aside class="hidden lg:flex w-60 shrink-0 flex-col gap-1 pr-4 border-r border-slate-200">
+  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono">Modules</p>
+  
+  <a href="dashboard.html" id="nav-dashboard" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
+  
+  <a href="members.html" id="nav-members" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
+  
+  <a href="users.html" id="nav-users" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
+  
+  <a href="districts.html" id="nav-districts" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
+  
+  <a href="units.html" id="nav-units" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
+  
+  <a href="alerts.html" id="nav-alerts" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
+  
+  <a href="export-master.html" id="nav-export" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-file-csv w-4 text-center"></i> Master Export</a>
+
+  <a href="settings.html" id="nav-settings" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
+  
+  <a href="payments.html" id="nav-payments" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
+  
+  <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all mt-4 w-full gap-2.5"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
+</aside>
 
     <main class="flex-1 min-w-0 flex flex-col gap-5">
       
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in-up stagger-1">
         <div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Membership Directory</h2>
-            <p class="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-wider">Total Captured Directory Nodes: <span id="statTotalCount" class="font-bold text-emerald-600">0</span></p>
+            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Memberships</h2>
+            <p class="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-wider">Total Added Memberships Details: <span id="statTotalCount" class="font-bold text-emerald-600">0</span></p>
         </div>
-        <button onclick="openMembershipFormModal()" class="h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider box-border"><i class="fa-solid fa-user-plus"></i> Enroll Member</button>
+        <button onclick="openMembershipFormModal()" class="h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-wider box-border"><i class="fa-solid fa-user-plus"></i> Add Membership</button>
       </div>
 
 <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
             <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-1"></i> Global Filters</h3>
             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                <button onclick="exportSelectedToPDF()" class="flex-1 sm:flex-none h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-file-pdf text-rose-600"></i> Export PDF List</button>
+                <button onclick="exportSelectedToPDF()" class="flex-1 sm:flex-none h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-file-pdf text-rose-600"></i> Export PDF</button>
                 <button onclick="exportSelectedToCSV()" class="flex-1 sm:flex-none h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-file-csv text-emerald-600"></i> Export CSV</button>
             </div>
         </div>
@@ -91,6 +104,11 @@
           <select id="filterDistrict" class="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none cursor-pointer font-medium" onchange="syncFilterDropdowns('district')"><option value="">All Districts</option></select>
           <select id="filterBlock" class="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none cursor-pointer font-medium" onchange="syncFilterDropdowns('block')"><option value="">All Blocks</option></select>
           <select id="filterPanchayat" class="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none cursor-pointer font-medium" onchange="applyFilters()"><option value="">All Panchayats</option></select>
+          <select id="filterType" class="w-full lg:w-auto h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none cursor-pointer font-medium" onchange="applyFilters()">
+    <option value="">All Types</option>
+    <option value="digital">Digital Only</option>
+    <option value="physical">Physical Only</option>
+</select>
         </div>
       </div>
 
@@ -103,7 +121,7 @@
                 <th class="py-3.5 px-4 w-10 text-center">#</th>
                 <th class="py-3.5 px-4">Member Info</th>
                 <th class="py-3.5 px-4">Contact</th>
-                <th class="py-3.5 px-4">Territory Node</th>
+                <th class="py-3.5 px-4">Level</th>
                 <th class="py-3.5 px-4">Role</th>
                 <th class="py-3.5 px-4 text-right pr-6">Action</th>
               </tr>
@@ -140,20 +158,38 @@
     </main>
   </div>
 
-  <nav class="lg:hidden bg-white/95 border-t border-slate-200 fixed bottom-0 left-0 right-0 h-14 flex items-center justify-around px-2 backdrop-blur-layer z-30" style="padding-bottom: env(safe-area-inset-bottom);">
-      <a href="dashboard.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400"><i class="fa-solid fa-chart-line text-sm"></i><span class="text-[8px] font-bold mt-1">Home</span></a>
-      <a href="members.html" class="flex flex-col items-center justify-center flex-1 h-full text-emerald-600"><i class="fa-solid fa-address-book text-sm"></i><span class="text-[8px] font-bold mt-1">Members</span></a>
-      <a href="districts.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400"><i class="fa-solid fa-map-location-dot text-sm"></i><span class="text-[8px] font-bold mt-1">Map</span></a>
-      <a href="units.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400"><i class="fa-solid fa-sitemap text-sm"></i><span class="text-[8px] font-bold mt-1">Units</span></a>
-      <a href="settings.html" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400"><i class="fa-solid fa-gears text-sm"></i><span class="text-[8px] font-bold mt-1">Setup</span></a>
-  </nav>
+ <nav class="lg:hidden bg-white/95 border-t border-slate-200 fixed bottom-0 left-0 right-0 h-14 flex items-center justify-around px-2 backdrop-blur-layer z-30 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar" style="padding-bottom: env(safe-area-inset-bottom);">
+    <!-- State & Master Admin Only -->
+    <a href="dashboard.html" id="mob-dashboard" class="admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-chart-line text-sm"></i><span class="text-[8px] font-bold mt-1">Home</span></a>
+    
+    <!-- Everyone -->
+    <a href="members.html" id="mob-members" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-address-book text-sm"></i><span class="text-[8px] font-bold mt-1">Members</span></a>
+    
+    <!-- Master Admin Only -->
+    <a href="users.html" id="mob-users" class="master-admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-users text-sm"></i><span class="text-[8px] font-bold mt-1">Users</span></a>
+    
+    <!-- State & Master Admin Only -->
+    <a href="districts.html" id="mob-districts" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-map-location-dot text-sm"></i><span class="text-[8px] font-bold mt-1">Map</span></a>
+    
+    <!-- Master Admin Only: EXPORT -->
+    <a href="export-master.html" id="mob-export" class="master-admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-file-csv text-sm"></i><span class="text-[8px] font-bold mt-1">Export</span></a>
+
+    <!-- Everyone -->
+    <a href="units.html" id="mob-units" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-sitemap text-sm"></i><span class="text-[8px] font-bold mt-1">Units</span></a>
+    
+    <!-- State & Master Admin Only -->
+    <a href="settings.html" id="mob-settings" class="admin-only hidden-force flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-gears text-sm"></i><span class="text-[8px] font-bold mt-1">Setup</span></a>
+    
+    <!-- Everyone -->
+    <a href="payments.html" id="mob-payments" class="flex flex-col items-center justify-center min-w-[50px] flex-1 h-full text-slate-400 hover:text-slate-900 transition-colors"><i class="fa-solid fa-indian-rupee-sign text-sm"></i><span class="text-[8px] font-bold mt-1">Pay</span></a>
+</nav>
 
   <div id="viewMembershipModal" class="backdrop-blur-layer bg-slate-950/60 hidden fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
       
       <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-200">
           
           <div class="flex justify-between items-center p-4 sm:p-6 border-b border-slate-100 bg-slate-50/50">
-              <h3 class="text-lg font-black text-slate-900 uppercase font-mono tracking-tight"><i class="fa-solid fa-id-badge text-indigo-500 mr-2"></i> ID & Verification Gateway</h3>
+              <h3 class="text-lg font-black text-slate-900 uppercase font-mono tracking-tight"><i class="fa-solid fa-id-badge text-indigo-500 mr-2"></i> ID Preview</h3>
               <button onclick="closeViewMembershipModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"><i class="fa-solid fa-xmark"></i></button>
           </div>
 
@@ -234,7 +270,7 @@
 
                       <div class="flex flex-col w-full px-2 lg:px-0 lg:max-w-[680px] mx-auto mt-2">
                           <button onclick="downloadDigitalCardAsPDF(event)" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all uppercase tracking-wider flex items-center justify-center gap-2 text-xs">
-                              <i class="fa-solid fa-lock text-sm"></i> Download Secure PDF
+                              <i class="fa-solid fa-lock text-sm"></i> Download PDF
                           </button>
                       </div>
                   </div>
@@ -243,7 +279,7 @@
                       
                       <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden">
                           <div class="absolute -right-4 -top-4 w-20 h-20 bg-indigo-50 rounded-full opacity-50 pointer-events-none"></div>
-                          <h4 class="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3 font-mono relative z-10"><i class="fa-solid fa-link"></i> Verification Hub</h4>
+                          <h4 class="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3 font-mono relative z-10"><i class="fa-solid fa-link"></i> Verification Details</h4>
                           
                           <label class="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 font-mono">Public Share Link</label>
                           <div class="flex gap-2 relative z-10">
@@ -258,14 +294,14 @@
                                   <img id="viewMemQRCode" src="" crossorigin="anonymous" class="w-full h-full object-contain">
                               </div>
                               <div>
-                                  <p class="text-[9px] text-slate-500 leading-relaxed">This secure link and QR code routes directly to the public gateway. Anyone can cryptographically verify this member's authenticity.</p>
+                                  <p class="text-[9px] text-slate-500 leading-relaxed">This secure link and QR code routes directly to the public portal. Anyone can cryptographically verify this member's authenticity.</p>
                                   <button onclick="downloadMemberQR(event)" class="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 mt-1 uppercase tracking-wider font-mono"><i class="fa-solid fa-download"></i> Save QR Image</button>
                               </div>
                           </div>
                       </div>
 
                       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                          <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 font-mono"><i class="fa-solid fa-database text-slate-400"></i> Database Snapshot</h4>
+                          <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 font-mono"><i class="fa-solid fa-database text-slate-400"></i> Membership Details</h4>
                           <div class="space-y-2.5 text-[11px]">
                               <div class="flex justify-between border-b border-slate-50 pb-1.5"><span class="text-slate-400 font-medium">Contact</span><span id="viewMemPhone" class="font-mono font-bold text-slate-800">-</span></div>
                               <div class="flex justify-between border-b border-slate-50 pb-1.5"><span class="text-slate-400 font-medium">WhatsApp</span><span id="viewMemWhatsapp" class="font-mono font-bold text-emerald-600">-</span></div>
@@ -274,7 +310,7 @@
                               <div class="flex justify-between border-b border-slate-50 pb-1.5"><span class="text-slate-400 font-medium">DOB / Age</span><span id="viewMemAge" class="font-bold text-slate-800">-</span></div>
                               <div class="flex justify-between border-b border-slate-50 pb-1.5"><span class="text-slate-400 font-medium">Blood Group</span><span id="viewMemBlood" class="font-bold text-rose-600">-</span></div>
                               <div class="flex justify-between border-b border-slate-50 pb-1.5"><span class="text-slate-400 font-medium">Police Station</span><span id="viewMemPS" class="font-bold text-slate-800 uppercase">-</span></div>
-                              <div class="flex justify-between pt-1"><span class="text-slate-400 font-medium">Capture Source</span><span id="viewMemCreator" class="font-bold text-indigo-500 uppercase">-</span></div>
+                              <div class="flex justify-between pt-1"><span class="text-slate-400 font-medium">Added By</span><span id="viewMemCreator" class="font-bold text-indigo-500 uppercase">-</span></div>
                           </div>
                       </div>
 
@@ -288,7 +324,7 @@
       <div class="bg-white rounded-[2rem] shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-200">
           
           <div class="flex justify-between items-center p-5 sm:p-6 border-b border-slate-100 bg-slate-50">
-              <h3 class="text-lg font-black text-slate-900 uppercase font-mono tracking-tight"><i class="fa-solid fa-user-plus text-emerald-500 mr-2"></i> Enroll Member</h3>
+              <h3 class="text-lg font-black text-slate-900 uppercase font-mono tracking-tight"><i class="fa-solid fa-user-plus text-emerald-500 mr-2"></i> Add Membership</h3>
               <button onclick="closeMembershipModal()" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"><i class="fa-solid fa-xmark"></i></button>
           </div>
 
@@ -332,6 +368,10 @@
                                   <option value="AB+">AB+</option><option value="AB-">AB-</option>
                               </select>
                           </div>
+                          <div class="sm:col-span-2 flex items-center bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 mt-2">
+    <input type="checkbox" id="formIsDigital" class="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-emerald-500 cursor-pointer accent-emerald-600">
+    <label for="formIsDigital" class="ml-2 block text-xs font-bold text-slate-700 cursor-pointer">This is a Digital Membership</label>
+</div>
                          <div class="sm:col-span-1">
     <label class="block text-[10px] font-bold text-slate-500 mb-1 font-mono uppercase">Committee Level *</label>
     <select id="formLevel" required onchange="syncRoleDropdown()" class="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl px-3 text-xs outline-none font-bold text-slate-800 transition-colors">
@@ -397,7 +437,7 @@
                   </div>
 
                   <div class="flex justify-end pt-4 border-t border-slate-100">
-                      <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-8 rounded-xl shadow-md uppercase tracking-wider text-xs transition-colors"><i class="fa-solid fa-save mr-2"></i> Save Member</button>
+                      <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-8 rounded-xl shadow-md uppercase tracking-wider text-xs transition-colors"><i class="fa-solid fa-save mr-2"></i> Save Membership</button>
                   </div>
               </form>
           </div>
@@ -422,8 +462,8 @@
           <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
               <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-          <h3 class="text-lg font-black text-slate-900 mb-2">Revoke Membership?</h3>
-          <p class="text-xs text-slate-500 mb-6">This action is permanent and will remove this member from the directory. Do you want to proceed?</p>
+          <h3 class="text-lg font-black text-slate-900 mb-2">Delete Membership?</h3>
+          <p class="text-xs text-slate-500 mb-6">This action is permanent and will remove this membership from the directory. Do you want to proceed?</p>
           <div class="flex gap-3 w-full">
               <button onclick="closeDeleteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition-colors">Cancel</button>
               <button onclick="confirmDeleteMember()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-colors">Yes, Delete</button>

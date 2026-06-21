@@ -64,13 +64,14 @@ function resolveUserNode() {
 // DATA CORE FETCH & DYNAMIC CALCULATION
 // ==========================================
 async function fetchFinanceData() {
-    toggleInteractionLoader(true, "Calculating Node Financials...");
+    toggleInteractionLoader(true, "Loading Payments...");
     try {
         const [payRes, setRes, feeRes, memRes] = await Promise.all([
             supa.from('payments').select('*').order('id', { ascending: false }),
             supa.from('settings').select('*').eq('key', 'MasterUPI').maybeSingle(),
             supa.from('fee_structure').select('*'),
-            supa.from('memberships').select('district, block, panchayat, unit, committee_role')
+            // Added is_digital to the select query below
+            supa.from('memberships').select('district, block, panchayat, unit, committee_role, is_digital') 
         ]);
         
         allPayments = payRes.data || [];
@@ -84,9 +85,8 @@ async function fetchFinanceData() {
 
         if(feeRes.data) {
             feeRes.data.forEach(f => {
-                if(FEE_STRUCTURE.hasOwnProperty(f.role_type)) {
-                    FEE_STRUCTURE[f.role_type] = parseFloat(f.amount) || 0;
-                }
+                // Assigns directly so the new 'digital' role type is captured automatically
+                FEE_STRUCTURE[f.role_type] = parseFloat(f.amount) || 0;
             });
         }
 
@@ -98,7 +98,6 @@ async function fetchFinanceData() {
     }
     toggleInteractionLoader(false);
 }
-
 function calculateNodeFinancials(allSystemMembers) {
     let expectedTotal = 0;
     let paidTotal = 0;
@@ -109,18 +108,26 @@ function calculateNodeFinancials(allSystemMembers) {
     }
 
     nodeMembers.forEach(m => {
-        let roleStr = m.committee_role || 'Unit Member';
-        let level = roleStr.split(' ')[0].toLowerCase(); 
-        if (roleStr.toLowerCase().includes('member')) level = 'member';
+    let roleStr = m.committee_role || 'Unit Member';
+    let level = roleStr.split(' ')[0].toLowerCase(); 
+    if (roleStr.toLowerCase().includes('member')) level = 'member';
 
-        // Safe parsing to prevent NaN breaks
-        let feeAmount = FEE_STRUCTURE[level];
-        if (feeAmount === undefined || isNaN(feeAmount)) {
-            feeAmount = FEE_STRUCTURE['member'] || 0;
-        }
-        
-        expectedTotal += parseFloat(feeAmount);
-    });
+    let feeAmount;
+    
+    // Check if it's a digital membership first
+    if (m.is_digital) {
+        feeAmount = FEE_STRUCTURE['digital'];
+    } else {
+        feeAmount = FEE_STRUCTURE[level];
+    }
+
+    // Safe parsing to prevent NaN breaks
+    if (feeAmount === undefined || isNaN(feeAmount)) {
+        feeAmount = FEE_STRUCTURE['member'] || 0;
+    }
+    
+    expectedTotal += parseFloat(feeAmount);
+});
 
     allPayments.forEach(p => {
         if (NODE_TYPE === "GLOBAL" || p.node_path === NODE_PATH) {
@@ -259,7 +266,7 @@ function renderTable() {
                 </td>
                 <td class="py-3.5 px-5">
                     <div class="font-bold text-slate-700 text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-user-tie text-slate-400 text-[10px]"></i> ${p.recorded_by}</div>
-                    <div class="text-[9px] text-slate-500 font-bold mt-1.5 uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs text-indigo-400 text-[10px]"></i> Node: ${p.node_path}</div>
+                    <div class="text-[9px] text-slate-500 font-bold mt-1.5 uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs text-indigo-400 text-[10px]"></i> Field Name: ${p.node_path}</div>
                 </td>
                 <td class="py-3.5 px-5">
                     ${statusBadge}
@@ -398,4 +405,41 @@ function exportToCSV() {
     link.href = URL.createObjectURL(blob);
     link.setAttribute("download", `SSF_Ledger_Export.csv`);
     link.click();
+}
+
+// ==========================================
+// DYNAMIC LOGOUT VERIFICATION MODAL
+// ==========================================
+
+function promptLogout() {
+    // Check if modal exists to prevent duplicating it on multiple clicks
+    if (!document.getElementById('dynamicLogoutModal')) {
+        const modalHTML = `
+        <div id="dynamicLogoutModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-xl border border-slate-200 animate-fade-in-up">
+                <div class="flex flex-col items-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
+                        <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 mb-1">Confirm Logout</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6">Are you sure you want to securely end your current session?</p>
+                    <div class="flex gap-3 w-full">
+                        <button onclick="closeLogoutPrompt()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
+                        <button onclick="executeSecureLogout()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Inject into the page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    // Show the modal
+    document.getElementById('dynamicLogoutModal').classList.remove('hidden');
+}
+
+function closeLogoutPrompt() {
+    const modal = document.getElementById('dynamicLogoutModal');
+    if (modal) modal.classList.add('hidden');
 }
