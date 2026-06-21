@@ -358,7 +358,7 @@ function viewMemberDetails(membershipId) {
     <div class="truncate tracking-wider mb-[14px]">${m.membership_id}</div>
     <div class="truncate text-[#c41e23] font-bold uppercase mb-[9px]">${m.name}</div>
     <div class="truncate uppercase mb-[9px]">${m.unit}</div>
-    <div class="truncate uppercase mb-[9px]">${m.district}</div>
+    <div class="truncate uppercase mb-[9px]">${m.block}</div>
     <div class="truncate tracking-widest">${m.phone}</div>
 </div>
                 
@@ -463,11 +463,11 @@ async function executePDFDownload(membershipId) {
                 <div id="pdf-front-card" style="width: 600px; height: 380px; position: relative; box-sizing: border-box; background: #ffffff; overflow: hidden; border-radius: 12px; border: 1px solid #cbd5e1;">
                     <img src="front.png" style="position: absolute; top: 0; left: 0; width: 600px; height: 380px; object-fit: cover; z-index: 1;">
                     
-                    <div style="position: absolute; top: 100px; left: 150px; width: 340px; font-size: 14px; line-height: 1.2; font-weight: normal; color: #0f172a; z-index: 10; font-family: 'Poppins', sans-serif;">
+                    <div style="position: absolute; top: 92px; left: 150px; width: 340px; font-size: 14px; line-height: 1.2; font-weight: normal; color: #0f172a; z-index: 10; font-family: 'Poppins', sans-serif;">
                         <div style="letter-spacing: 1px; margin-bottom: 12px;">${m.membership_id}</div>
                         <div style="color: #c41e23; font-weight: bold; text-transform: uppercase; margin-bottom: 7px;">${m.name}</div>
                         <div style="text-transform: uppercase; margin-bottom: 7px;">${m.unit}</div>
-                        <div style="text-transform: uppercase; margin-bottom: 7px;">${m.district}</div>
+                        <div style="text-transform: uppercase; margin-bottom: 7px;">${m.block}</div>
                         <div style="letter-spacing: 2px;">${m.phone}</div>
                     </div>
                     
