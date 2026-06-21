@@ -24,9 +24,39 @@
     <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Processing Data...</p>
   </div>
 
+  <div id="mobileNavBackdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] hidden transition-opacity opacity-0 duration-300" onclick="toggleMobileNav(false)"></div>
+  
+  <div id="mobileNavDrawer" class="fixed top-0 left-0 bottom-0 w-64 bg-white z-[110] shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
+      <div class="h-14 flex items-center justify-between px-4 border-b border-slate-100">
+          <span class="text-sm font-cooper bg-emerald-600 text-white px-2.5 py-1 rounded-md shadow-inner">SSF</span>
+          <button onclick="toggleMobileNav(false)" class="p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono mt-2">Modules</p>
+          
+          <a href="dashboard.html" class="admin-only hidden-force flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
+          <a href="members.html" class="flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
+          <a href="users.html" class="master-admin-only hidden-force flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
+          <a href="districts.html" class="admin-only hidden-force flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
+          <a href="units.html" class="flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
+          <a href="alerts.html" class="master-admin-only hidden-force flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
+          
+          <a href="export-master.html" class="master-admin-only hidden-force flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 bg-slate-900 text-white shadow-md"><i class="fa-solid fa-file-csv w-4 text-center"></i> Master Export</a>
+
+          <a href="settings.html" class="admin-only hidden-force flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
+          <a href="payments.html" class="flex items-center text-xs px-3 py-3 rounded-xl font-bold transition-all w-full gap-3 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
+          
+          <div class="mt-auto pt-4 pb-2">
+            <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-3 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all w-full gap-3"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
+          </div>
+      </div>
+  </div>
+
   <header class="bg-white border-b border-slate-200/60 sticky top-0 z-30 shadow-sm">
     <div class="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleMobileNav(true)" class="lg:hidden p-1.5 -ml-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"><i class="fa-solid fa-bars text-xl"></i></button>
+        
         <span class="text-sm font-cooper bg-emerald-600 text-white px-2.5 py-1 rounded-md shadow-inner">SSF</span>
         <span class="text-xs font-black tracking-tight text-slate-800 hidden sm:inline-block">West Bengal Committee</span>
       </div>
@@ -44,29 +74,23 @@
 
   <div class="max-w-[1400px] mx-auto w-full px-4 py-6 flex-1 flex flex-col lg:flex-row gap-6 pb-20 lg:pb-6">
     
- <aside class="hidden lg:flex w-60 shrink-0 flex-col gap-1 pr-4 border-r border-slate-200">
-  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono">Modules</p>
-  
-  <a href="dashboard.html" id="nav-dashboard" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
-  
-  <a href="members.html" id="nav-members" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
-  
-  <a href="users.html" id="nav-users" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
-  
-  <a href="districts.html" id="nav-districts" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
-  
-  <a href="units.html" id="nav-units" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
-  
-  <a href="alerts.html" id="nav-alerts" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
-  
-  <a href="export-master.html" id="nav-export" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-file-csv w-4 text-center"></i> Master Export</a>
+    <aside class="hidden lg:flex w-60 shrink-0 flex-col gap-1 pr-4 border-r border-slate-200">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 font-mono">Modules</p>
+        
+        <a href="dashboard.html" id="nav-dashboard" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-chart-line w-4 text-center"></i> Analytics</a>
+        <a href="members.html" id="nav-members" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-address-book w-4 text-center"></i> Memberships</a>
+        <a href="users.html" id="nav-users" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-users w-4 text-center"></i> Users</a>
+        <a href="districts.html" id="nav-districts" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-map-location-dot w-4 text-center"></i> Districts</a>
+        <a href="units.html" id="nav-units" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-sitemap w-4 text-center"></i> Units</a>
+        <a href="alerts.html" id="nav-alerts" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-bullhorn w-4 text-center"></i> Alerts</a>
+        
+        <a href="export-master.html" id="nav-export" class="master-admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-file-csv w-4 text-center"></i> Master Export</a>
 
-  <a href="settings.html" id="nav-settings" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
-  
-  <a href="payments.html" id="nav-payments" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
-  
-  <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all mt-4 w-full gap-2.5"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
-</aside>
+        <a href="settings.html" id="nav-settings" class="admin-only hidden-force flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-gears w-4 text-center"></i> Settings</a>
+        <a href="payments.html" id="nav-payments" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold transition-all w-full gap-2.5 text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-indian-rupee-sign w-4 text-center"></i> Payments</a>
+        
+        <a href="portal.html" target="_blank" class="flex items-center text-xs px-3 py-2.5 rounded-xl font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all mt-4 w-full gap-2.5"><i class="fa-solid fa-external-link w-4 text-center"></i> Public Portal</a>
+    </aside>
 
     <main class="flex-1 min-w-0 flex flex-col gap-5">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in-up stagger-1">
@@ -194,12 +218,66 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up stagger-4">
-            <button onclick="downloadCustomCSV()" class="h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 uppercase tracking-wider border-2 border-emerald-500">
-                <i class="fa-solid fa-file-csv text-xl"></i> Export CSV Data
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-3">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-sliders text-blue-500 mr-1.5"></i> 3. Media Export Settings</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3"><i class="fa-solid fa-camera mr-1"></i> Member Photos</h4>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Width (px)</label>
+                            <input type="number" id="settingPhotoW" placeholder="Auto" class="w-full h-9 box-border bg-white border border-slate-200 focus:border-indigo-500 rounded-lg px-2 text-xs outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Height (px)</label>
+                            <input type="number" id="settingPhotoH" placeholder="Auto" class="w-full h-9 box-border bg-white border border-slate-200 focus:border-indigo-500 rounded-lg px-2 text-xs outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Format</label>
+                            <select id="settingPhotoFormat" class="w-full h-9 box-border bg-white border border-slate-200 focus:border-indigo-500 rounded-lg px-2 text-xs outline-none cursor-pointer">
+                                <option value="jpeg">JPEG</option>
+                                <option value="png">PNG</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3"><i class="fa-solid fa-qrcode mr-1"></i> QR Codes</h4>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Width (px)</label>
+                            <input type="number" id="settingQrW" value="300" class="w-full h-9 box-border bg-white border border-slate-200 focus:border-indigo-500 rounded-lg px-2 text-xs outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Height (px)</label>
+                            <input type="number" id="settingQrH" value="300" class="w-full h-9 box-border bg-white border border-slate-200 focus:border-indigo-500 rounded-lg px-2 text-xs outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold text-slate-400 mb-1 uppercase">Format</label>
+                            <select id="settingQrFormat" class="w-full h-9 box-border bg-white border border-slate-200 focus:border-indigo-500 rounded-lg px-2 text-xs outline-none cursor-pointer">
+                                <option value="png">PNG</option>
+                                <option value="jpeg">JPEG</option>
+                                <option value="svg">SVG</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in-up stagger-4">
+            <button onclick="downloadCustomCSV()" class="h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider border-2 border-emerald-500">
+                <i class="fa-solid fa-file-csv text-lg"></i> Export CSV
             </button>
-            <button onclick="downloadFilteredPhotos()" class="h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 uppercase tracking-wider border-2 border-indigo-500">
-                <i class="fa-solid fa-file-zipper text-xl"></i> Download Photos (.ZIP)
+            <button onclick="downloadFilteredPhotos()" class="h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm px-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider border-2 border-indigo-500">
+                <i class="fa-solid fa-camera text-lg"></i> Download Photos
+            </button>
+            <button onclick="downloadFilteredQRs()" class="h-14 bg-sky-600 hover:bg-sky-700 text-white font-black text-sm px-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider border-2 border-sky-500">
+                <i class="fa-solid fa-qrcode text-lg"></i> Download QRs
             </button>
         </div>
 
@@ -208,5 +286,27 @@
 
   <script src="supabase.js"></script>
   <script src="export-master.js"></script>
+  
+  <script>
+      function toggleMobileNav(show) {
+          const backdrop = document.getElementById('mobileNavBackdrop');
+          const drawer = document.getElementById('mobileNavDrawer');
+          
+          if (show) {
+              backdrop.classList.remove('hidden');
+              // Small delay to allow display:block to register before changing opacity
+              setTimeout(() => {
+                  backdrop.classList.remove('opacity-0');
+                  drawer.classList.remove('-translate-x-full');
+              }, 10);
+          } else {
+              backdrop.classList.add('opacity-0');
+              drawer.classList.add('-translate-x-full');
+              setTimeout(() => {
+                  backdrop.classList.add('hidden');
+              }, 300); // Matches the duration-300 class
+          }
+      }
+  </script>
 </body>
 </html>

@@ -4,9 +4,16 @@ let structuralHierarchyData = { districts: [], blocks: [], panchayats: [], units
 document.addEventListener('DOMContentLoaded', async () => {
     if (!enforceSession()) return;
     setActiveSidebarLink('settings');
+
+    // UN-HIDE RESTRICTED SECTIONS FOR MASTER ADMINS
+    if (STATE_CACHE.role === 'MasterAdmin') {
+        document.querySelectorAll('.master-admin-only').forEach(el => {
+            el.classList.remove('hidden-force');
+        });
+    }
+
     await initializeSettingsData();
 });
-
 // ==========================================
 // CORE DATA INIT
 // ==========================================

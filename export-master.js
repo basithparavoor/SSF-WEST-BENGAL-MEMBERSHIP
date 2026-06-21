@@ -175,18 +175,25 @@ function downloadCustomCSV() {
     spawnToastNotification("CSV Export Downloaded.", "success");
 }
 
+// ==========================================
+// BULK MEDIA EXPORTERS (PHOTOS & QRs)
+// ==========================================
 async function downloadFilteredPhotos() {
     if (filteredExportMembers.length === 0) {
         return spawnToastNotification("No records match the current filters.", "error");
     }
 
     const membersWithPhotos = filteredExportMembers.filter(m => m.photo_url && m.photo_url.trim() !== '');
-    
     if (membersWithPhotos.length === 0) {
         return spawnToastNotification("None of the filtered members have photos.", "error");
     }
 
-    toggleInteractionLoader(true, `Compressing ${membersWithPhotos.length} photos...`);
+    const targetW = parseInt(document.getElementById('settingPhotoW').value) || null;
+    const targetH = parseInt(document.getElementById('settingPhotoH').value) || null;
+    const format = document.getElementById('settingPhotoFormat').value || 'jpeg';
+    const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+
+    toggleInteractionLoader(true, `Processing ${membersWithPhotos.length} photos...`);
 
     const zip = new JSZip();
     const photoFolder = zip.folder(`SSF_Photos_${new Date().toISOString().split('T')[0]}`);
@@ -194,13 +201,34 @@ async function downloadFilteredPhotos() {
     try {
         const promises = membersWithPhotos.map(async (member) => {
             try {
-                const response = await fetch(member.photo_url, { mode: 'cors' });
-                if (!response.ok) throw new Error("Fetch failed");
-                const blob = await response.blob();
+                // Fetch image directly and load it into a dynamic Canvas for resizing & format conversion
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = member.photo_url;
+                
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = targetW || img.width;
+                canvas.height = targetH || img.height;
+                const ctx = canvas.getContext('2d');
+                
+                // If converting to JPEG, give it a solid white background to prevent transparent black-outs
+                if (format === 'jpeg') {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Convert canvas to requested format Blob
+                const blob = await new Promise(res => canvas.toBlob(res, mimeType, 0.95));
                 
                 const safeName = member.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                const ext = member.photo_url.split('.').pop().split('?')[0] || 'jpg';
-                const filename = `${member.membership_id}_${safeName}.${ext}`;
+                const filename = `${member.membership_id}_${safeName}.${format}`;
                 
                 photoFolder.file(filename, blob);
             } catch (err) {
@@ -212,8 +240,7 @@ async function downloadFilteredPhotos() {
 
         const zipBlob = await zip.generateAsync({ type: "blob" });
         saveAs(zipBlob, `SSF_Bulk_Photos_${new Date().toISOString().split('T')[0]}.zip`);
-        
-        spawnToastNotification("ZIP archive downloaded!", "success");
+        spawnToastNotification("Photos downloaded successfully!", "success");
 
     } catch (error) {
         spawnToastNotification("Failed to compile ZIP file.", "error");
@@ -222,6 +249,66 @@ async function downloadFilteredPhotos() {
     toggleInteractionLoader(false);
 }
 
+async function downloadFilteredQRs() {
+    if (filteredExportMembers.length === 0) {
+        return spawnToastNotification("No records match the current filters.", "error");
+    }
+
+    const w = parseInt(document.getElementById('settingQrW').value) || 300;
+    const h = parseInt(document.getElementById('settingQrH').value) || 300;
+    const format = document.getElementById('settingQrFormat').value || 'png';
+
+    toggleInteractionLoader(true, `Generating ${filteredExportMembers.length} QR Codes...`);
+
+    const zip = new JSZip();
+    const qrFolder = zip.folder(`SSF_QRs_${new Date().toISOString().split('T')[0]}`);
+
+    // Build absolute URL for the QR code target
+    const host = window.location.origin;
+    let path = window.location.pathname;
+    let dirPath = path.substring(0, path.lastIndexOf('/'));
+    const baseUrl = host !== "null" ? `${host}${dirPath}` : "https://yourwebsite.com" + dirPath; 
+
+    try {
+        // Chunk API requests to prevent browser/API throttling
+        const chunkSize = 50;
+        for (let i = 0; i < filteredExportMembers.length; i += chunkSize) {
+            const chunk = filteredExportMembers.slice(i, i + chunkSize);
+            
+            const promises = chunk.map(async (member) => {
+                try {
+                    const verifyUrl = `${baseUrl}/verify.html?id=${member.membership_id}`;
+                    
+                    // Request the exact size & format directly from the QR API engine
+                    const fetchUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${w}x${h}&data=${encodeURIComponent(verifyUrl)}&margin=0&format=${format}`;
+
+                    const response = await fetch(fetchUrl);
+                    if (!response.ok) throw new Error("QR Fetch failed");
+                    const blob = await response.blob();
+                    
+                    const safeName = member.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    const filename = `${member.membership_id}_${safeName}.${format}`;
+                    
+                    qrFolder.file(filename, blob);
+                } catch (err) {
+                    console.warn(`Skipped QR for ${member.membership_id}`);
+                }
+            });
+
+            // Wait for chunk to finish before triggering next 50 requests
+            await Promise.all(promises);
+        }
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        saveAs(zipBlob, `SSF_Bulk_QRs_${new Date().toISOString().split('T')[0]}.zip`);
+        spawnToastNotification("QR Codes downloaded successfully!", "success");
+
+    } catch (error) {
+        spawnToastNotification("Failed to compile QR ZIP file.", "error");
+    }
+
+    toggleInteractionLoader(false);
+}
 // ==========================================
 // GLOBAL LOGOUT MODAL (Required for header)
 // ==========================================
