@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Fetch all required datasets concurrently
 async function fetchInitialData() {
-    toggleInteractionLoader(true, "Synchronizing Operator Registry...");
+    toggleInteractionLoader(true, "Loading Users...");
     try {
         const [uRes, mRes, dRes, bRes, pRes, unRes] = await Promise.all([
             supa.from('users').select('*').order('created_at', { ascending: false }),

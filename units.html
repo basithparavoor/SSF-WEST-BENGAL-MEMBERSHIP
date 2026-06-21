@@ -29,7 +29,7 @@
           <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
               <i class="fa-solid fa-triangle-exclamation text-xl"></i>
           </div>
-          <h3 class="text-lg font-black text-slate-900 mb-2">Erase Unit?</h3>
+          <h3 class="text-lg font-black text-slate-900 mb-2">Delete Unit?</h3>
           <p class="text-sm text-slate-500 mb-6">Are you sure you want to delete <span id="deleteModalUnitName" class="font-bold text-rose-600"></span>? This action cannot be undone.</p>
           <div class="flex gap-3 justify-end">
               <button onclick="closeDeleteModal()" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancel</button>
@@ -115,16 +115,16 @@
       <div class="admin-only hidden-force bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">
         <h3 class="text-xs font-black text-slate-900 mb-4 uppercase tracking-wider font-mono flex items-center gap-2"><i class="fa-solid fa-layer-group text-indigo-500"></i> Deploy New Unit</h3>
         <form onsubmit="handleUnitFormSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Parent District *</label><select id="unitFormDistrict" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700" onchange="syncUnitFormDropdowns('district')"><option value="">Select District</option></select></div>
-          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Parent Block *</label><select id="unitFormBlock" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700" onchange="syncUnitFormDropdowns('block')"><option value="">Select Block</option></select></div>
-          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Parent Panchayat *</label><select id="unitFormPanchayat" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700"><option value="">Select Panchayat</option></select></div>
-          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Target Unit Name *</label><input type="text" id="unitFormName" required placeholder="e.g. Ward 12 Central" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700"></div>
-          <div><button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-10 rounded-xl shadow-md font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Deploy Unit</button></div>
+          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">District *</label><select id="unitFormDistrict" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700" onchange="syncUnitFormDropdowns('district')"><option value="">Select District</option></select></div>
+          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Block *</label><select id="unitFormBlock" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700" onchange="syncUnitFormDropdowns('block')"><option value="">Select Block</option></select></div>
+          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Panchayat *</label><select id="unitFormPanchayat" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700"><option value="">Select Panchayat</option></select></div>
+          <div><label class="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 font-mono pl-1">Unit Name *</label><input type="text" id="unitFormName" required placeholder="e.g. Ward 12 Central" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none h-10 box-border focus:border-indigo-500 text-xs font-bold text-slate-700"></div>
+          <div><button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-10 rounded-xl shadow-md font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Add Unit</button></div>
         </form>
       </div>
 
 <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-            <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-1"></i> Data Filters</h3>
+            <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-1"></i> Global Filters</h3>
             <div class="flex gap-2 w-full sm:w-auto">
                 <button onclick="exportToCSV()" class="flex-1 sm:flex-none h-10 box-border bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-file-csv text-emerald-600"></i> CSV Export</button>
                 <button onclick="exportToPDF()" class="flex-1 sm:flex-none h-10 box-border bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-file-pdf text-rose-500"></i> PDF Export</button>

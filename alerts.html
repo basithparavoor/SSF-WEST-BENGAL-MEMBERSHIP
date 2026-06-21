@@ -33,8 +33,8 @@
               <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 mb-4 shadow-inner">
                   <i class="fa-solid fa-triangle-exclamation text-xl"></i>
               </div>
-              <h3 class="text-lg font-black text-slate-900 mb-1">Revoke Transmission?</h3>
-              <p class="text-xs text-slate-500 font-medium mb-6">This action will permanently drop and wipe this historical transmission row. It cannot be undone.</p>
+              <h3 class="text-lg font-black text-slate-900 mb-1">Delete Alert?</h3>
+              <p class="text-xs text-slate-500 font-medium mb-6">This action will permanently delete this alert. It cannot be undone.</p>
               <div class="flex gap-3 w-full">
                   <button onclick="closeDeleteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-2.5 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel</button>
                   <button onclick="confirmDeleteDirective()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-colors font-mono uppercase tracking-wider">Yes, Wipe It</button>
@@ -46,7 +46,7 @@
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
   <div id="globalLoader" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm transition-opacity">
     <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent mb-3 shadow-lg"></div>
-    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Syncing Broadcasts...</p>
+    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Loading Alerts...</p>
   </div>
 
   <header class="bg-white border-b border-slate-200/60 sticky top-0 z-30 shadow-sm">
@@ -97,24 +97,24 @@
       
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in-up">
         <div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Communications Command</h2>
-            <p class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Broadcast rich-media layout guidelines downstream.</p>
+            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Alerts To Users</h2>
+            <p class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Broadcast Alerts With Media And Attachments.</p>
         </div>
       </div>
 
       <div class="admin-only hidden-force bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">
-        <h3 id="editorPanelHeader" class="text-xs font-black text-slate-900 mb-4 uppercase tracking-wider font-mono flex items-center gap-2"><i class="fa-solid fa-pen-nib text-amber-500"></i> Compose Transmission</h3>
+        <h3 id="editorPanelHeader" class="text-xs font-black text-slate-900 mb-4 uppercase tracking-wider font-mono flex items-center gap-2"><i class="fa-solid fa-pen-nib text-amber-500"></i> Send Alert</h3>
         <input type="hidden" id="editTargetDirectiveId" value="">
 
         <div class="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div class="sm:col-span-6"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono"><i class="fa-solid fa-crosshairs text-indigo-500"></i> Target Field Matrix Scope</p></div>
+            <div class="sm:col-span-6"><p class="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono"><i class="fa-solid fa-crosshairs text-indigo-500"></i> Target Field To Alert</p></div>
             <div>
                 <select id="alertTargetLevel" class="w-full h-10 box-border bg-white border border-slate-200 rounded-xl px-2 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 cursor-pointer" onchange="switchGeographicAlertScope()">
-                    <option value="Global">Global Broad</option>
-                    <option value="District">District Isolation</option>
-                    <option value="Block">Block Isolation</option>
-                    <option value="Panchayat">Panchayat Isolation</option>
-                    <option value="Unit">Unit Isolation</option>
+                    <option value="Global">Field Level</option>
+                    <option value="District">Districts</option>
+                    <option value="Block">Blocks</option>
+                    <option value="Panchayat">Panchayats</option>
+                    <option value="Unit">Units</option>
                 </select>
             </div>
             <div><select id="alertTargetDist" disabled class="w-full h-10 box-border bg-white border border-slate-200 rounded-xl px-2 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 cursor-pointer disabled:opacity-50" onchange="syncAlertFormLevels('district')"><option value="">-- All Districts --</option></select></div>
@@ -129,16 +129,16 @@
             </div>
             <div class="flex justify-end gap-2">
                 <button id="btnCancelEdit" onclick="revertEditorFormState()" class="hidden h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-6 rounded-xl transition-colors font-mono uppercase tracking-wider">Cancel Edit</button>
-                <button onclick="commitRichTextAdvice()" class="h-10 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-8 rounded-xl shadow-md transition-colors uppercase font-mono tracking-wider flex items-center justify-center gap-2"><i class="fa-solid fa-satellite-dish"></i> <span id="btnSubmitText">Deploy Broadcast</span></button>
+                <button onclick="commitRichTextAdvice()" class="h-10 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-8 rounded-xl shadow-md transition-colors uppercase font-mono tracking-wider flex items-center justify-center gap-2"><i class="fa-solid fa-satellite-dish"></i> <span id="btnSubmitText">Send Alert</span></button>
             </div>
         </div>
       </div>
 
-<div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">        <h4 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700 mb-3"><i class="fa-solid fa-search text-emerald-500 mr-1"></i> Filter Active Feeds</h4>
+<div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">        <h4 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700 mb-3"><i class="fa-solid fa-search text-emerald-500 mr-1"></i> Global Filter</h4>
         
         <div class="flex flex-col gap-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select id="filterFeedScope" class="w-full h-10 box-border bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold outline-none cursor-pointer" onchange="applyFilters()"><option value="">All Transmissions</option><option value="Global">Global Broadcasts</option><option value="Targeted">Isolated / Field Specific</option></select>
+                <select id="filterFeedScope" class="w-full h-10 box-border bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold outline-none cursor-pointer" onchange="applyFilters()"><option value="">All Alerts</option><option value="Global">Level Alerts</option><option value="Targeted">Field Specific</option></select>
                 <input type="text" id="filterTextQuery" placeholder="Search inside text content..." class="w-full h-10 box-border bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none font-medium transition-colors" oninput="applyFilters()">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
@@ -151,7 +151,7 @@
       </div>
 
       <div class="animate-fade-in-up stagger-4">
-          <h3 class="text-xs font-black text-slate-900 mb-4 uppercase tracking-wider font-mono flex items-center gap-2 border-b border-slate-200 pb-2"><i class="fa-solid fa-tower-broadcast text-emerald-500"></i> Active Log Matrix</h3>
+          <h3 class="text-xs font-black text-slate-900 mb-4 uppercase tracking-wider font-mono flex items-center gap-2 border-b border-slate-200 pb-2"><i class="fa-solid fa-tower-broadcast text-emerald-500"></i> Active Alerts</h3>
           <div id="directivesMasterList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
       </div>
 

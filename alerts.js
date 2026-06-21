@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Fetch territory matrix tables and directive rows concurrently
 async function fetchHierarchyAndDirectives() {
-    toggleInteractionLoader(true, "Synchronizing Transmissions...");
+    toggleInteractionLoader(true, "Loading Alerts...");
     try {
         const [dRes, bRes, pRes, uRes, alRes] = await Promise.all([
             supa.from('districts').select('*'),
@@ -250,7 +250,7 @@ async function commitRichTextAdvice() {
         return;
     }
 
-    toggleInteractionLoader(true, "Deploying Transmission...");
+    toggleInteractionLoader(true, "Sending Alert...");
     const payload = { 
         created_by: STATE_CACHE.user,
         target_level: lvl, 
@@ -262,11 +262,11 @@ async function commitRichTextAdvice() {
         if(editId) {
             // Update row override configuration
             await supa.from('directive_logs').update(payload).eq('id', editId);
-            spawnToastNotification("Broadcast content updated.", "success");
+            spawnToastNotification("Alert content updated.", "success");
         } else {
             // New database entry
             await supa.from('directive_logs').insert([payload]);
-            spawnToastNotification("Broadcast successfully deployed.", "success");
+            spawnToastNotification("Alert successfully sent.", "success");
         }
         revertEditorFormState();
         await fetchHierarchyAndDirectives();
@@ -333,10 +333,10 @@ async function confirmDeleteDirective() {
     const id = pendingDeleteId;
     closeDeleteModal();
 
-    toggleInteractionLoader(true, "Revoking...");
+    toggleInteractionLoader(true, "Deleting...");
     try {
         await supa.from('directive_logs').delete().eq('id', id);
-        spawnToastNotification("Transmission dropped.", "success");
+        spawnToastNotification("Alert deleted.", "success");
         if(document.getElementById('editTargetDirectiveId').value == id) revertEditorFormState();
         await fetchHierarchyAndDirectives();
     } catch(err) {

@@ -486,8 +486,8 @@ function launchNestedEditPrompt(table, name, dParent = null, bParent = null, pPa
 }
 
 function dispatchDistrictMatrixPurge(table, name, dParent = null, bParent = null, pParent = null) {
-    showCustomConfirm("Delete Structural Field?", "Erase this path and ALL internal data? This cannot be undone.", "bg-rose-600", async () => {
-        toggleInteractionLoader(true, "Purging node hierarchies...");
+    showCustomConfirm("Delete This Field?", "Delete This Field and ALL internal data? This cannot be undone.", "bg-rose-600", async () => {
+        toggleInteractionLoader(true, "Deleting Field...");
         try {
             if(table === 'districts') await supa.from('districts').delete().eq('district_name', name);
             if(table === 'blocks') await supa.from('blocks').delete().eq('district_name', dParent).eq('block_name', name);

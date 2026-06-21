@@ -22,8 +22,8 @@
   <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
   <div id="globalLoader" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm transition-opacity">
     <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent mb-3 shadow-lg"></div>
-    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Syncing Database...</p>
-  </div>
+    <p id="globalLoaderText" class="text-xs font-black tracking-widest text-slate-500 uppercase font-mono">Loading Users...</p>
+  </div> 
 
   <header class="bg-white border-b border-slate-200/60 sticky top-0 z-30 shadow-sm">
     <div class="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
@@ -75,12 +75,12 @@
         <div class="md:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between hover:shadow-md transition-all relative overflow-hidden">
             <div class="absolute -right-4 -top-4 w-32 h-32 bg-sky-50 rounded-full opacity-40"></div>
             <div>
-                <h2 class="text-xl font-black text-slate-900 tracking-tight">Operator Command</h2>
-                <p class="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-wider">System Access Registry</p>
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">Users Overview</h2>
+                <p class="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-wider">Users Details, credentials and access levels</p>
             </div>
             <div class="flex items-end gap-6 mt-4 relative z-10">
                 <div>
-                    <span class="block text-[10px] font-bold text-slate-400 uppercase">Total Operators</span>
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">Total Users</span>
                     <span id="statTotalUsers" class="text-3xl font-black text-sky-600">0</span>
                 </div>
                 <div class="pb-1 flex gap-4">
@@ -97,18 +97,18 @@
         </div>
         
         <div class="md:col-span-2 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col items-center justify-center hover:shadow-md transition-all">
-            <h4 class="text-[9px] font-black uppercase tracking-wider text-slate-400 w-full text-left font-mono mb-2">Access Level Distribution</h4>
+            <h4 class="text-[9px] font-black uppercase tracking-wider text-slate-400 w-full text-left font-mono mb-2">User Level Density</h4>
             <div class="relative h-24 w-full flex justify-center"><canvas id="roleChart"></canvas></div>
         </div>
       </div>
 
 <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm animate-fade-in-up stagger-2">        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-            <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-1"></i> Directory Filters</h3>
+            <h3 class="text-xs font-black uppercase tracking-wider font-mono text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-1"></i> Global Filters</h3>
             
             <div class="flex gap-2 w-full sm:w-auto h-10">
                 <button onclick="exportToCSV()" class="h-full flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-csv text-emerald-600"></i> CSV</button>
                 <button onclick="exportToPDF()" class="h-full flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-pdf text-rose-500"></i> PDF</button>
-                <button onclick="openUserCreationModal()" class="h-full flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-user-plus"></i> Deploy</button>
+                <button onclick="openUserCreationModal()" class="h-full flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-user-plus"></i> Add User</button>
             </div>
         </div>
         
@@ -139,9 +139,9 @@
             <thead class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
               <tr class="text-[9px] font-black uppercase tracking-wider text-slate-400 font-mono">
                 <th class="py-3.5 px-4 w-10 text-center">#</th>
-                <th class="py-3.5 px-4">Operator Identity</th>
-                <th class="py-3.5 px-4">Clearance / Status</th>
-                <th class="py-3.5 px-4">Assigned Territory</th>
+                <th class="py-3.5 px-4">User Info</th>
+                <th class="py-3.5 px-4">Type & Status</th>
+                <th class="py-3.5 px-4">Field</th>
                 <th class="py-3.5 px-4 text-center">Records</th>
                 <th class="py-3.5 px-4 text-right pr-6">Management</th>
               </tr>
@@ -154,7 +154,7 @@
 
         <div id="emptyState" class="hidden py-16 flex flex-col items-center justify-center text-slate-400 w-full">
             <i class="fa-solid fa-users-slash text-4xl mb-3 opacity-20"></i>
-            <p class="font-bold text-sm text-slate-500">No operators found</p>
+            <p class="font-bold text-sm text-slate-500">No Users found</p>
             <p class="text-[10px] mt-1">Adjust your filters to see more results.</p>
         </div>
 
@@ -207,15 +207,15 @@
   <div id="userModal" class="backdrop-blur-layer bg-slate-950/40 hidden fixed inset-0 z-40 flex items-center justify-center p-3 opacity-0 transition-opacity duration-200">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]">
       <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between rounded-t-2xl">
-        <h3 id="userModalTitle" class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono"><i class="fa-solid fa-user-plus text-indigo-600 mr-2"></i> Deploy Operator</h3>
+        <h3 id="userModalTitle" class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono"><i class="fa-solid fa-user-plus text-indigo-600 mr-2"></i> Add User</h3>
         <button onclick="closeUserModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:text-white hover:bg-rose-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
       </div>
       <form id="userForm" onsubmit="handleUserFormSubmit(event)" class="overflow-y-auto p-5 space-y-4 flex-1 text-xs ios-scroll custom-scrollbar">
         
-        <div><label class="block font-bold text-slate-500 mb-1">Operator Name</label><input type="text" id="userFormName" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 outline-none font-bold text-slate-800"></div>
+        <div><label class="block font-bold text-slate-500 mb-1">Name of User</label><input type="text" id="userFormName" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 outline-none font-bold text-slate-800"></div>
         
         <div class="grid grid-cols-2 gap-3">
-            <div><label class="block font-bold text-slate-500 mb-1">Username Handle</label><input type="text" id="userFormUser" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 outline-none font-bold text-slate-800 lowercase disabled:opacity-60 disabled:cursor-not-allowed"></div>
+            <div><label class="block font-bold text-slate-500 mb-1">Username</label><input type="text" id="userFormUser" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 outline-none font-bold text-slate-800 lowercase disabled:opacity-60 disabled:cursor-not-allowed"></div>
             <div>
                 <label class="block font-bold text-slate-500 mb-1">Password</label>
                 <input type="password" id="userFormPass" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 outline-none font-bold tracking-widest text-slate-800 placeholder:tracking-normal placeholder:font-normal">
@@ -235,16 +235,16 @@
         </div>
 
         <div id="userFormScopeContainer" class="hidden space-y-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-            <p class="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono border-b border-indigo-100 pb-1.5"><i class="fa-solid fa-map-location-dot mr-1"></i> Territory Assignment</p>
-            <div id="userFormDistWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Target District</label><select id="userFormDist" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium" onchange="syncUserFormScopeLevels('district')"></select></div>
-            <div id="userFormBlkWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Target Block</label><select id="userFormBlk" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium" onchange="syncUserFormScopeLevels('block')"></select></div>
-            <div id="userFormPanWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Target Panchayat</label><select id="userFormPan" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium" onchange="syncUserFormScopeLevels('panchayat')"></select></div>
-            <div id="userFormUntWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Target Unit</label><select id="userFormUnt" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium"></select></div>
+            <p class="text-[9px] font-black text-indigo-500 uppercase tracking-widest font-mono border-b border-indigo-100 pb-1.5"><i class="fa-solid fa-map-location-dot mr-1"></i> Field Assignment</p>
+            <div id="userFormDistWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">District</label><select id="userFormDist" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium" onchange="syncUserFormScopeLevels('district')"></select></div>
+            <div id="userFormBlkWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Block</label><select id="userFormBlk" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium" onchange="syncUserFormScopeLevels('block')"></select></div>
+            <div id="userFormPanWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Panchayat</label><select id="userFormPan" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium" onchange="syncUserFormScopeLevels('panchayat')"></select></div>
+            <div id="userFormUntWrap" class="hidden"><label class="block font-bold text-slate-500 mb-1">Unit</label><select id="userFormUnt" class="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 outline-none font-medium"></select></div>
         </div>
 
         <div class="border-t border-slate-100 pt-3 flex justify-end gap-2 mt-4">
             <button type="button" onclick="closeUserModal()" class="border border-slate-200 px-4 py-2 rounded-xl text-slate-600 font-bold hover:bg-slate-100 transition-colors">Cancel</button>
-            <button type="submit" id="userFormSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold font-mono uppercase tracking-wider shadow-md transition-colors"><i class="fa-solid fa-check mr-1"></i> Deploy</button>
+            <button type="submit" id="userFormSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold font-mono uppercase tracking-wider shadow-md transition-colors"><i class="fa-solid fa-check mr-1"></i> Add User</button>
         </div>
       </form>
     </div>
@@ -253,7 +253,7 @@
   <div id="viewUserModal" class="backdrop-blur-layer bg-slate-950/40 hidden fixed inset-0 z-40 flex items-center justify-center p-3 opacity-0 transition-opacity duration-200">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm transform scale-95 transition-transform duration-200 flex flex-col">
       <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between rounded-t-2xl">
-        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono"><i class="fa-solid fa-id-badge text-sky-600 mr-2"></i> Operator Dossier</h3>
+        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono"><i class="fa-solid fa-id-badge text-sky-600 mr-2"></i> User Profile Card</h3>
         <button onclick="closeViewUserModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:text-white hover:bg-rose-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
       </div>
       <div class="p-5 text-sm space-y-4">
@@ -268,28 +268,28 @@
           </div>
           <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-2 gap-3 text-xs">
               <div>
-                  <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Username Handle</span>
+                  <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Username</span>
                   <span id="vuUser" class="font-bold text-slate-700 font-mono">---</span>
               </div>
               <div>
-                  <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">System Status</span>
+                  <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Status</span>
                   <span id="vuStatus" class="font-bold">---</span>
               </div>
           </div>
           <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs">
-              <span class="block text-[9px] font-black uppercase text-amber-600 mb-1"><i class="fa-solid fa-key mr-1"></i> Operator Password (Plaintext)</span>
+              <span class="block text-[9px] font-black uppercase text-amber-600 mb-1"><i class="fa-solid fa-key mr-1"></i> Password (Plaintext)</span>
               <div class="flex items-center justify-between bg-white px-3 py-2 border border-amber-100 rounded-lg">
                   <span id="vuPass" class="font-mono font-bold tracking-wider text-slate-800 filter blur-sm transition-all hover:blur-none select-all cursor-pointer" title="Hover to reveal">••••••••</span>
               </div>
               <p class="text-[9px] text-amber-500 mt-1 italic">Hover to reveal credentials. Keep this information secure.</p>
           </div>
           <div>
-              <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Assigned Territory</span>
+              <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Assigned Field</span>
               <div id="vuTerritory" class="font-bold text-slate-700 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 text-xs"><i class="fa-solid fa-location-crosshairs text-indigo-400 mr-1"></i> ---</div>
           </div>
       </div>
       <div class="px-5 py-3 border-t border-slate-100 flex justify-end">
-          <button onclick="closeViewUserModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors">Close Dossier</button>
+          <button onclick="closeViewUserModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors">Close Profile Card</button>
       </div>
     </div>
   </div>
@@ -297,7 +297,7 @@
   <div id="viewMembersModal" class="backdrop-blur-layer bg-slate-950/40 hidden fixed inset-0 z-40 flex items-center justify-center p-3 opacity-0 transition-opacity duration-200">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl transform scale-95 transition-transform duration-200 flex flex-col max-h-[85vh]">
       <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between rounded-t-2xl">
-        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono"><i class="fa-solid fa-users text-emerald-600 mr-2"></i> Captured Members <span id="vmUserTitle" class="text-slate-400 lowercase ml-2"></span></h3>
+        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider font-mono"><i class="fa-solid fa-users text-emerald-600 mr-2"></i> Added Members <span id="vmUserTitle" class="text-slate-400 lowercase ml-2"></span></h3>
         <button onclick="closeViewMembersModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:text-white hover:bg-rose-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
       </div>
       <div class="flex-1 overflow-auto p-0 custom-scrollbar">
@@ -307,7 +307,7 @@
                 <th class="py-2.5 px-4 w-10 text-center">#</th>
                 <th class="py-2.5 px-4">Member Name</th>
                 <th class="py-2.5 px-4">Contact</th>
-                <th class="py-2.5 px-4">Captured On</th>
+                <th class="py-2.5 px-4">Added On</th>
               </tr>
             </thead>
             <tbody id="vmTableBody" class="divide-y divide-slate-100 text-slate-700">
@@ -315,7 +315,7 @@
           </table>
           <div id="vmEmptyState" class="hidden py-10 flex flex-col items-center justify-center text-slate-400">
               <i class="fa-solid fa-box-open text-3xl mb-2 opacity-30"></i>
-              <p class="font-bold text-xs">No members captured yet.</p>
+              <p class="font-bold text-xs">No members added yet.</p>
           </div>
           <div id="vmLoader" class="py-10 flex flex-col items-center justify-center">
               <div class="animate-spin rounded-full h-8 w-8 border-2 border-emerald-600 border-t-transparent mb-2"></div>

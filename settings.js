@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // CORE DATA INIT
 // ==========================================
 async function initializeSettingsData() {
-    toggleInteractionLoader(true, "Synchronizing configurations...");
+    toggleInteractionLoader(true, "Loading Settings...");
     try {
         // 1. Fetch User Data to pre-fill credentials
         document.getElementById('modProfileName').value = STATE_CACHE.displayName || '';

@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchMasterData() {
-    toggleInteractionLoader(true, "Synchronizing Master Database...");
+    toggleInteractionLoader(true, "Loading Datas...");
     try {
         const [mRes, dRes, bRes, pRes, uRes] = await Promise.all([
             supa.from('memberships').select('*').order('timestamp', { ascending: false }),
