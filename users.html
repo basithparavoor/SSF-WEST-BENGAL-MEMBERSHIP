@@ -12,6 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
@@ -285,9 +286,12 @@
               <div id="vuTerritory" class="font-bold text-slate-700 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 text-xs"><i class="fa-solid fa-location-crosshairs text-indigo-400 mr-1"></i> ---</div>
           </div>
       </div>
-      <div class="px-5 py-3 border-t border-slate-100 flex justify-end">
-          <button onclick="closeViewUserModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors">Close Profile Card</button>
+      
+      <div class="px-5 py-3 border-t border-slate-100 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
+          <button id="btnDownloadCreds" onclick="downloadUserCredentialPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 shadow-sm"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+          <button onclick="closeViewUserModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors">Close Profile</button>
       </div>
+      
     </div>
   </div>
 

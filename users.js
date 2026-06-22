@@ -10,6 +10,7 @@ let pageSize = 25;
 // Variables to track modal states
 let editUserId = null;
 let currentUserForDelete = null;
+let activeViewUser = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (!enforceSession()) return;
@@ -435,6 +436,8 @@ function openViewUserModal(username) {
     const user = allUsers.find(u => u.username === username);
     if(!user) return;
 
+    activeViewUser = username; // Track the currently viewed user
+
     document.getElementById('vuName').innerText = user.name;
     document.getElementById('vuRole').innerText = user.role;
     document.getElementById('vuUser').innerText = user.username;
@@ -447,7 +450,11 @@ function openViewUserModal(username) {
 
     showModal('viewUserModal');
 }
-function closeViewUserModal() { hideModal('viewUserModal'); }
+
+function closeViewUserModal() { 
+    activeViewUser = null; 
+    hideModal('viewUserModal'); 
+}
 
 async function openViewMembersModal(username) {
     document.getElementById('vmUserTitle').innerText = `@${username}`;
@@ -666,4 +673,167 @@ function promptLogout() {
 function closeLogoutPrompt() {
     const modal = document.getElementById('dynamicLogoutModal');
     if (modal) modal.classList.add('hidden');
+}
+
+// ==========================================
+// USER CREDENTIAL PDF GENERATOR (A4 PREMIUM - ADJUSTABLE)
+// ==========================================
+async function downloadUserCredentialPDF() {
+    if(!activeViewUser || !window.jspdf || !window.html2canvas) {
+        return spawnToastNotification("Required libraries are loading. Please wait.", "error");
+    }
+
+    const user = allUsers.find(u => u.username === activeViewUser);
+    if(!user) return;
+
+    // =========================================================
+    // 🛠️ LAYOUT ADJUSTMENT OPTIONS
+    // Change these values to shift elements up/down or adjust spacing
+    // =========================================================
+    const layout = {
+        headerPadding: "35px 45px",       // Top/Bottom and Left/Right padding for the green header
+        bodyPadding: "35px 45px",         // Padding for the main white content area
+        spacingBetweenBlocks: "25px",     // Space below the Territory block and Credentials grid
+        spacingBelowInstructions: "25px", // Space between instructions and the QR code box
+        qrImageSize: "90px",              // Size of the QR code
+        
+        // 🔗 PDF Invisible Link Position 
+        // (Measured in millimeters for A4 paper: 210mm wide x 297mm tall)
+        // If the clickable area doesn't align with the button, adjust these:
+        linkX: 20,                        // Left offset
+        linkY: 220,                       // Top offset (increase to move link down, decrease to move up)
+        linkWidth: 170,                   // Width of the clickable area
+        linkHeight: 45                    // Height of the clickable area
+    };
+    // =========================================================
+
+    const btn = document.getElementById('btnDownloadCreds');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+    btn.disabled = true;
+
+    try {
+        const container = document.createElement('div');
+        const loginUrl = "https://membership.ssfwestbengal.org";
+        const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(loginUrl)}&size=300&margin=0`;
+        
+        // Exact A4 Ratio at 96 DPI
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '794px'; 
+        container.style.height = '1123px'; 
+        container.style.zIndex = '-9999';
+
+        const territory = parseTerritory(user.assigned_fields_json);
+        const pass = user.plain_password || 'Password Reset Required';
+        const currentDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        // Template using the layout variables
+        container.innerHTML = `
+        <div style="width: 794px; height: 1123px; background-color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; position: relative; box-sizing: border-box; overflow: hidden;">
+            
+            <div style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); font-size: 140px; font-weight: 900; color: rgba(0,0,0,0.02); white-space: nowrap; pointer-events: none; letter-spacing: 10px;">CONFIDENTIAL</div>
+
+           <div style="background: linear-gradient(135deg, #047857 0%, #064e3b 100%); padding: ${layout.headerPadding}; color: white; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div>
+                    <div style="font-family: 'Cooper Black', serif; font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 2px;">SSF</div>
+                    <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; color: #a7f3d0;">West Bengal State Committee</div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end;">
+                    <div style="background: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 900; letter-spacing: 2px; text-indent: 2px; text-align: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">
+                        RESTRICTED ACCESS
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding: ${layout.bodyPadding};">
+                <h1 style="font-size: 28px; color: #0f172a; margin: 0 0 8px 0; font-weight: 900; letter-spacing: -0.5px;">Official Operator Credentials</h1>
+                <p style="font-size: 14px; color: #64748b; margin: 0 0 ${layout.spacingBetweenBlocks} 0; line-height: 1.5; font-weight: 500;">This document contains highly sensitive system access information intended solely for the designated authorized operator. Do not distribute.</p>
+
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 25px; margin-bottom: ${layout.spacingBetweenBlocks}; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 5px;">Assigned Field Jurisdiction</div>
+                    <div style="font-size: 20px; color: #0f172a; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">${territory}</div>
+                </div>
+
+                <div style="display: flex; gap: 20px; margin-bottom: ${layout.spacingBetweenBlocks};">
+                    <div style="flex: 1; background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03);">
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 10px;">Account Username</div>
+                        <div style="font-size: 18px; color: #0369a1; font-family: monospace; font-weight: bold; background: #f0f9ff; padding: 12px 15px; border-radius: 8px; border: 1px dashed #bae6fd; word-break: break-all;">${user.username}</div>
+                    </div>
+                    <div style="flex: 1; background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03);">
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 10px;">Current Password</div>
+                        <div style="font-size: 18px; color: #e11d48; font-family: monospace; font-weight: bold; background: #fff1f2; padding: 12px 15px; border-radius: 8px; border: 1px dashed #fecdd3; word-break: break-all;">${pass}</div>
+                    </div>
+                </div>
+
+                <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 15px 0; font-weight: 800; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">Standard Operating Procedures</h2>
+                <ol style="font-size: 14px; color: #475569; line-height: 1.5; margin: 0 0 ${layout.spacingBelowInstructions} 0; padding-left: 20px; font-weight: 500;">
+                    <li style="margin-bottom: 8px;">Navigate to the official SSF administration portal directly at <strong>membership.ssfwestbengal.org</strong> or scan the secure QR code below.</li>
+                    <li style="margin-bottom: 8px;">Enter the exact username and password provided above. Passwords are case-sensitive and must not contain leading/trailing spaces.</li>
+                    <li style="margin-bottom: 8px;">Upon successful login, verify that your dashboard reflects the correct assigned jurisdiction. If there is a mismatch, halt operations and contact the Master Admin.</li>
+                    <li style="margin-bottom: 8px; color: #b91c1c; font-weight: 700; background: #fef2f2; padding: 8px 12px; border-radius: 8px; border-left: 4px solid #ef4444;">SECURITY DIRECTIVE: Never transmit these credentials via WhatsApp, SMS, or unencrypted channels. If printed, this document must be stored securely or cross-shredded after use.</li>
+                </ol>
+
+                <div style="display: flex; align-items: center; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.06);">
+                    <img src="${qrUrl}" crossorigin="anonymous" style="width: ${layout.qrImageSize}; height: ${layout.qrImageSize}; border-radius: 8px; margin-right: 25px; border: 3px solid #f8fafc; outline: 1px solid #e2e8f0;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 14px; color: #0284c7; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Scan to Login Instantly</div>
+                        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; text-align: center; padding: 15px; border-radius: 10px; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">Click Here To Access Portal</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; text-align: center; padding: 20px; font-size: 12px; font-weight: 600; color: #94a3b8; border-top: 1px solid #e2e8f0; background: white;">
+                Generated securely by the SSF Master Administration System on ${currentDate}
+            </div>
+        </div>
+        `;
+
+        document.body.appendChild(container);
+
+        const allImages = Array.from(container.querySelectorAll('img'));
+        await Promise.all(allImages.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => {
+                img.onload = resolve;
+                img.onerror = resolve; 
+                setTimeout(resolve, 3000); 
+            });
+        }));
+
+        await new Promise(r => setTimeout(r, 200)); 
+
+        const canvas = await html2canvas(container, { 
+            scale: 2, 
+            useCORS: true, 
+            backgroundColor: "#ffffff",
+            windowWidth: 794,
+            windowHeight: 1123,
+            scrollY: 0
+        });
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        
+        // Use the dynamically mapped link variables from our layout config
+        pdf.link(layout.linkX, layout.linkY, layout.linkWidth, layout.linkHeight, { url: loginUrl });
+
+        pdf.save(`SSF_Credentials_${user.username}.pdf`);
+
+        document.body.removeChild(container);
+        spawnToastNotification("A4 Credentials PDF downloaded!", "success");
+
+    } catch(err) {
+        console.error("PDF Error:", err);
+        spawnToastNotification("Failed to generate PDF.", "error");
+    } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
 }
