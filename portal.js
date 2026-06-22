@@ -11,30 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
         searchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const phone = document.getElementById('searchPhone').value.trim();
+            const dob = document.getElementById('searchDob').value;
             const btn = document.getElementById('searchBtn');
             const errorMsg = document.getElementById('errorMessage');
-            const originalBtnText = btn.innerHTML;
-
-            // 1. Verify CAPTCHA on the client-side
-            const recaptchaResponse = grecaptcha.getResponse();
-            if (recaptchaResponse.length === 0) {
-                errorMsg.innerText = "Security Check: Please confirm you are not a robot.";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
             
+            const originalBtnText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Searching...';
             btn.disabled = true;
             errorMsg.classList.add('hidden');
 
-            const phone = document.getElementById('searchPhone').value.trim();
-            const dob = document.getElementById('searchDob').value;
-
             try {
-                // IMPORTANT: In a truly secure environment, you should send the `recaptchaResponse`, 
-                // `phone`, and `dob` to a backend server (like a Supabase Edge Function). 
-                // The server validates the token with Google before returning the member data.
-                
+                // Query Supabase for the member based on Phone AND Date of Birth
                 const { data, error } = await supa.from('memberships')
                     .select('*')
                     .eq('phone', phone)
@@ -42,18 +30,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     .maybeSingle();
 
                 if (error || !data) {
-                    errorMsg.innerText = "Identity Not Found. Please check your details.";
+                    errorMsg.innerText = "Identity Not Found. Please check the Phone Number and Date of Birth.";
                     errorMsg.classList.remove('hidden');
                 } else {
-                    renderDigitalCard(data);
+                    // Hide search form, show result, and render the card
+                    document.getElementById('searchSection').classList.add('hidden');
+                    document.getElementById('resultSection').classList.remove('hidden');
+                    renderPortalCard(data);
                 }
             } catch (err) {
-                errorMsg.innerText = "System error. Please try again.";
+                errorMsg.innerText = "Network error connecting to the registry. Please try again.";
                 errorMsg.classList.remove('hidden');
             } finally {
                 btn.innerHTML = originalBtnText;
                 btn.disabled = false;
-                grecaptcha.reset(); // Reset the CAPTCHA for the next attempt
             }
         });
     }
